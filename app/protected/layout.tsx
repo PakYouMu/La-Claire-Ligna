@@ -1,9 +1,6 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
+import { AuthButton } from "@/components/auth-button";
+import InteractiveWaveBackground from "@/components/interactive-wave-bg";
 
 export default function ProtectedLayout({
   children,
@@ -11,38 +8,28 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
+      <div className="h-screen grid grid-rows-[auto_1fr] relative">
         <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
           <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
             <div className="flex gap-5 items-center font-semibold">
               <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
             </div>
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+            <AuthButton />
           </div>
         </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          {children}
-        </div>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
+      <div className="relative min-h-0">
+        <InteractiveWaveBackground>
+          {children}
+        </InteractiveWaveBackground>
+      </div>
+      {/* 
+        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs py-1">
           <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
+            Don't like the dark? Change the theme!
           </p>
           <ThemeSwitcher />
-        </footer>
+        </footer> */}
       </div>
-    </main>
   );
 }

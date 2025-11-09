@@ -1,7 +1,8 @@
+import "./globals.css";
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -19,14 +20,20 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+const Flaemische_Kanzleischrift = localFont({
+  src: '../lib/fonts/Flaemische Kanzleischrift.ttf',
+  display: 'swap',
+  variable: '--font-display'
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+    <html lang="en" className={`${geistSans.variable} antialiased ${Flaemische_Kanzleischrift.variable}`} suppressHydrationWarning>
+      <body className="antiaaliased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
