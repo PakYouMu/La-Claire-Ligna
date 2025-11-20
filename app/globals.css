@@ -29,10 +29,6 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --metal-top: #000000; /* Lighter grey */
-    --metal-bottom: #000000; /* Darker grey */
-    --sheen-color-stops: rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0.4) 30%, transparent 100%;
-    --wave-sheen-radius: 250;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -59,10 +55,6 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --metal-top: #ffffff; /* Lighter silver */
-    --metal-bottom: #ffffff; /* Darker silver */
-    --sheen-color-stops: rgb(255, 245, 200) 0%, rgb(255, 215, 0) 30%, rgba(196, 150, 33, 0.5) 60%, transparent 100%;
-    --wave-sheen-radius: 175;
   }
 }
 
@@ -76,38 +68,60 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* FIX FOR TEXT SELECTION */
+  ::selection {
+    background-color: hsl(var(--foreground));
+    color: hsl(var(--background));
+    /* Removes the transparency so you can actually see what you selected */
+    -webkit-text-fill-color: hsl(var(--background)); 
+  }
 }
 
-.sheen-container h1 {
+/* --- METALLIC SYSTEM --- */
+
+.metallic-text-effect {
   color: transparent;
-  -webkit-background-clip: text;
   background-clip: text;
-}
+  -webkit-background-clip: text;
+  
+  /* Added pb-1 (padding-bottom) here as a fallback for clipping */
+  padding-bottom: 0.1em; 
 
-/* Default (Light Mode) Style with its own specific sheen size */
-.sheen-container h1 {
   background-image: 
     radial-gradient(
-      ellipse 300px 150px at var(--mouse-x, -9999px) var(--mouse-y, -9999px),
-      var(--sheen-color-stops)
+      circle 100px at var(--mouse-x, -999px) var(--mouse-y, -999px),
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0.5) 15%,
+      transparent 40%
     ),
-    linear-gradient(to bottom, 
-      var(--metal-top),
-      var(--metal-bottom),
-      var(--metal-top)
+    linear-gradient(
+      135deg,
+      #333 0%,
+      #666 25%,
+      #333 50%,
+      #666 75%,
+      #333 100%
     );
+  
+  background-size: 100% 100%;
+  will-change: background-image;
 }
 
-/* Dark Mode OVERRIDE with its smaller sheen size */
-.dark .sheen-container h1 {
+.dark .metallic-text-effect {
   background-image: 
     radial-gradient(
-      ellipse 200px 100px at var(--mouse-x, -9999px) var(--mouse-y, -9999px),
-      var(--sheen-color-stops)
+      circle 120px at var(--mouse-x, -999px) var(--mouse-y, -999px),
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0.6) 20%,
+      transparent 50%
     ),
-    linear-gradient(to bottom, 
-      var(--metal-top),
-      var(--metal-bottom),
-      var(--metal-top)
+    linear-gradient(
+      135deg,
+      #9ca3af 0%,
+      #e5e7eb 25%,
+      #9ca3af 50%,
+      #e5e7eb 75%,
+      #9ca3af 100%
     );
 }

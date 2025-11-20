@@ -1,32 +1,22 @@
 'use client';
 
 import { Zap, ZapOff } from "lucide-react";
-import { useState, useEffect, useRef, useContext } from "react";
-import { MousePositionContext } from '../context/mouse-position-context';
-// import InteractiveWaveBackground from "@/components/interactive-wave-bg";
-import InteractiveWaveBackground from "../3d/interactive-wave-3d";
+import { useState, useEffect } from "react";
+import InteractiveWaveBackground from "@/components/interactive-wave-bg";
 
 export default function MotionToggleWrapper({ children }: { children: React.ReactNode }) {
   const [reducedMotion, setReducedMotion] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { x, y } = useContext(MousePositionContext);
 
-  useEffect(() => {
-    if (containerRef.current && x !== null && y !== null) {
-      const rect = containerRef.current.getBoundingClientRect();
-      // Calculate mouse position relative to the container div
-      const relativeX = x - rect.left;
-      const relativeY = y - rect.top;
-      containerRef.current.style.setProperty("--mouse-x", `${relativeX}px`);
-      containerRef.current.style.setProperty("--mouse-y", `${relativeY}px`);
-    }
-  }, [x, y]);
-
+  // This function manually passes mouse data to the canvas
+  // We ONLY need this when the mouse is blocked by UI elements (like text)
   const forwardMouseEvent = (e: React.MouseEvent) => {
     const canvas = document.querySelector('canvas');
     if (canvas) {
       const newEvent = new MouseEvent(e.type, {
-        bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY,
+        bubbles: true, 
+        cancelable: true, 
+        clientX: e.clientX, 
+        clientY: e.clientY,
       });
       canvas.dispatchEvent(newEvent);
     }
@@ -56,15 +46,28 @@ export default function MotionToggleWrapper({ children }: { children: React.Reac
       </button>
 
       <InteractiveWaveBackground reducedMotion={reducedMotion}>
-        {/* We no longer need onMouseMove here for the sheen effect */}
+        {/* 
+           CHANGE 1: pointer-events-none
+           The container now lets mouse events pass THROUGH to the canvas directly.
+           This restores the high-performance native wave generation for the background.
+        */}
         <div 
-          ref={containerRef}
-          className="relative z-10 pointer-events-auto sheen-container"
-          onMouseEnter={forwardMouseEvent}
-          onMouseLeave={forwardMouseEvent}
-          onMouseMove={forwardMouseEvent} // Keep forwarding mouse move for the wave background
+          className="relative z-10 w-full h-full flex flex-col items-center justify-center pointer-events-none"
         >
-          {children}
+          {/* 
+             CHANGE 2: pointer-events-auto + Forwarding
+             We create an 'island' for the text. 
+             - pointer-events-auto: Makes text selectable.
+             - onMouseMove: Manually tells the waves to move since the canvas is blocked here.
+          */}
+          <div 
+            className="pointer-events-auto"
+            onMouseMove={forwardMouseEvent}
+            onMouseEnter={forwardMouseEvent}
+            onMouseLeave={forwardMouseEvent}
+          >
+            {children}
+          </div>
         </div>
       </InteractiveWaveBackground>
     </>
