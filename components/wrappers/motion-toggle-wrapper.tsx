@@ -3,7 +3,8 @@
 import { Zap, ZapOff } from "lucide-react";
 import { useState, useEffect, useRef, useContext } from "react";
 import { MousePositionContext } from '../context/mouse-position-context';
-import InteractiveWaveBackground from "@/components/interactive-wave-bg";
+// import InteractiveWaveBackground from "@/components/interactive-wave-bg";
+import InteractiveWaveBackground from "../3d/interactive-wave-3d";
 
 export default function MotionToggleWrapper({ children }: { children: React.ReactNode }) {
   const [reducedMotion, setReducedMotion] = useState(false);
