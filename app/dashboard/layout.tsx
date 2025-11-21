@@ -1,6 +1,5 @@
-import Link from "next/link";
+import NavOverlay from "@/components/landing-page/nav-overlay";
 import { AuthButton } from "@/components/auth/auth-button";
-import InteractiveWaveBackground from "@/components/landing-page/interactive-wave-bg";
 
 export default function DashboardLayout({
   children,
@@ -8,26 +7,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-      <div className="h-screen grid grid-rows-[auto_1fr] relative">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-            </div>
-            <AuthButton />
-          </div>
-        </nav>
+    // 1. Lock height to screen, disable scroll, relative positioning
+    <div className="h-screen w-full overflow-hidden relative bg-background">
+      
+      {/* 2. Navigation (Absolute Top) */}
+      <NavOverlay>
+        <AuthButton />
+      </NavOverlay>
 
-      <div className="relative min-h-0">
-          {children}
+      {/* 3. Content Area 
+          - pt-32 pushes content below the NavOverlay
+          - h-full ensures it takes remaining space
+          - overflow-hidden ensures no scroll bars appear on the page body
+      */}
+      <div className="relative w-full h-full pt-32 md:pt-40 overflow-hidden">
+        {children}
       </div>
-      {/* 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs py-1">
-          <p>
-            Don't like the dark? Change the theme!
-          </p>
-          <ThemeSwitcher />
-        </footer> */}
-      </div>
+      
+    </div>
   );
 }

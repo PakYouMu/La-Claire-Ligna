@@ -1,38 +1,36 @@
 import { getUserRole } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
-import { OverviewHeader } from "@/components/dashboard/overview-header";
+import { getWalletBalance, getLoanStats } from "@/app/actions/wallet";
+
+// 1. Import the Client Component Wrapper we just made
+import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
+
+// 2. Import the Server Components (The heavy tables)
+import { ActiveLoansTable } from "@/components/dashboard/active-loans-table";
 import { BorrowerList } from "@/components/dashboard/borrower-list";
-import { ActiveLoansTable } from "@/components/dashboard/active-loans-table"; // Import New Table
 
 export default async function DashboardPage() {
+  // A. Security Check
   const role = await getUserRole();
   if (!role) redirect("/auth/login");
 
+  // B. Data Fetching (Server-Side)
+  const [balance, stats] = await Promise.all([
+    getWalletBalance(),
+    getLoanStats()
+  ]);
+
+  // C. Render
+  // We pass the Server Components (<ActiveLoansTable />) as props to the Client Component.
+  // This pattern makes your app extremely fast because the JS for the table logic
+  // stays on the server, while the Bento animations run on the client.
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
-      <header className="flex justify-between items-center border-b pb-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {role === 'superuser' ? 'Boss' : 'Admin'}.
-          </p>
-        </div>
-      </header>
-
-      {/* 1. Money Overview */}
-      <OverviewHeader />
-
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        {/* 2. Main Content: Active Loans (Takes up 3 columns on large screens) */}
-        <div className="xl:col-span-3 space-y-6">
-           <ActiveLoansTable />
-        </div>
-
-        {/* 3. Sidebar: Borrower Directory (Takes up 1 column) */}
-        <div className="space-y-6">
-          <BorrowerList />
-        </div>
-      </div>
-    </div>
+    <DashboardGrid
+      role={role}
+      balance={balance}
+      stats={stats}
+      loansTable={<ActiveLoansTable />}
+      borrowerList={<BorrowerList />}
+    />
   );
 }

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ScanText, CheckCircle, Upload } from "lucide-react";
+import { Loader2, ScanText, Upload } from "lucide-react";
 
 export function CreateLoanModal() {
   const [open, setOpen] = useState(false);
@@ -29,43 +29,43 @@ export function CreateLoanModal() {
     name: "",
     amount: "",
     months: "",
-    interest_rate: "7", // Default
+    interest_rate: "7", 
     start_date: new Date().toISOString().split('T')[0]
   });
 
-  // 1. Handle File Select
+  // 1. FIX: Only switch step AFTER image is loaded
   function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
-      setStep('crop');
       const reader = new FileReader();
-      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
+      reader.addEventListener('load', () => {
+        const result = reader.result?.toString() || '';
+        setImgSrc(result);
+        // Only show crop screen if we actually have data
+        if (result) {
+          setStep('crop');
+        }
+      });
       reader.readAsDataURL(e.target.files[0]);
     }
   }
 
-  // 2. Handle "Process" (Crop Signature + OCR the rest)
+  // 2. Handle "Process"
   async function onProcess() {
     if (!imgRef.current || !crop) return;
     setIsProcessing(true);
 
     try {
-      // A. Extract Signature Blob
       const sigBlob = await getCroppedImg(imgRef.current, crop);
       setSignatureBlob(sigBlob);
 
-      // B. Mask Signature & Get Base64 for OCR
       const maskedBase64 = getMaskedImageBase64(imgRef.current, crop);
-
-      // C. Send to OCR API
       const parsedData = await parseLoanCard(maskedBase64);
 
-      // D. Auto-fill Form
       setFormData(prev => ({
         ...prev,
         name: parsedData.name || "",
         amount: parsedData.amount?.toString() || "",
         months: parsedData.months?.toString() || "",
-        // If OCR found a date, try to format it, otherwise keep today
         start_date: parsedData.date ? new Date(parsedData.date).toISOString().split('T')[0] : prev.start_date
       }));
 
@@ -97,7 +97,6 @@ export function CreateLoanModal() {
     try {
       await createFullLoan(payload);
       setOpen(false);
-      // Reset state
       setStep('upload');
       setImgSrc('');
     } catch (error: any) {
@@ -112,7 +111,7 @@ export function CreateLoanModal() {
       <DialogTrigger asChild>
         <Button className="gap-2 bg-green-600 hover:bg-green-700 text-white">
           <ScanText className="h-4 w-4" />
-          New Loan (Scan Card)
+          New Loan
         </Button>
       </DialogTrigger>
       
@@ -143,11 +142,17 @@ export function CreateLoanModal() {
         {step === 'crop' && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Highlight ONLY the signature. The system will read the text from the rest of the image.
+              Highlight ONLY the signature.
             </p>
             <div className="border rounded overflow-hidden bg-black/5">
               <ReactCrop crop={crop} onChange={c => setCrop(c)}>
-                <img ref={imgRef} src={imgSrc} alt="Upload" className="max-h-[50vh] object-contain mx-auto" />
+                {/* Fix 2: Guard against empty src just in case */}
+                <img 
+                  ref={imgRef} 
+                  src={imgSrc || undefined} 
+                  alt="Upload" 
+                  className="max-h-[50vh] object-contain mx-auto" 
+                />
               </ReactCrop>
             </div>
             <Button 
@@ -226,7 +231,7 @@ export function CreateLoanModal() {
             </div>
 
             <div className="flex justify-end gap-2 mt-2">
-              <Button variant="outline" onClick={() => setStep('upload')}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setStep('upload'); setImgSrc(''); }}>Cancel</Button>
               <Button type="submit" disabled={isProcessing}>
                 {isProcessing ? "Saving..." : "Confirm Loan"}
               </Button>
