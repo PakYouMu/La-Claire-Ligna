@@ -4,14 +4,30 @@ import { WAVE_CONFIG, REDUCED_MOTION_CONFIG } from '@/wave.config';
 import { MousePositionContext } from './context/mouse-position-context';
 import React, { useRef, useLayoutEffect, useCallback, useContext } from 'react';
 
-type WaveSource = {
-    id: number;
-    x: number;
-    y: number;
-    strength: number;
-    creationTime: number;
-    initialIntensity: number;
-};
+// OPTIMIZATION: Inline constants (JIT can inline these better than object properties)
+const F_X = 0, F_Y = 1, F_TIME = 2, F_INTENSITY = 3, F_STRENGTH = 4, STRIDE = 5;
+const PI = 3.141592653589793;
+const TWO_PI = 6.283185307179586;
+const HALF_PI = 1.5707963267948966;
+const INV_PI = 0.3183098861837907;
+
+// OPTIMIZATION: Combined lookup tables into single typed array for cache locality
+// Layout: [0-4095: sine, 4096-4351: noise]
+const LUT_SIZE = 4096 + 256;
+const LUT = new Float32Array(LUT_SIZE);
+const SIN_MASK = 4095;
+const NOISE_OFFSET = 4096;
+const NOISE_MASK = 255;
+const SIN_SCALE = 651.8986469044033; // 4096 / TWO_PI
+
+// Initialize combined LUT
+for (let i = 0; i < 4096; i++) LUT[i] = Math.sin((i / 4096) * TWO_PI);
+for (let i = 0; i < 256; i++) LUT[NOISE_OFFSET + i] = 0.4 + (Math.abs(Math.sin(i * 12.9898 + i) * 43758.5453) % 1) * 0.6;
+
+// OPTIMIZATION: Inline lookup with direct array access
+const sin = (x: number): number => LUT[(x * SIN_SCALE) & SIN_MASK];
+const cos = (x: number): number => LUT[((x + HALF_PI) * SIN_SCALE) & SIN_MASK];
+const noise = (i: number): number => LUT[NOISE_OFFSET + (i & NOISE_MASK)];
 
 const InteractiveWaveBackground = ({
     children,
@@ -20,45 +36,65 @@ const InteractiveWaveBackground = ({
     children: React.ReactNode;
     reducedMotion?: boolean;
 }) => {
-    // Hook needed for component lifecycle, but we bypass it for physics
     useContext(MousePositionContext);
 
     const config = reducedMotion ? REDUCED_MOTION_CONFIG : WAVE_CONFIG;
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const animationFrameId = useRef<number | null>(null);
-    const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
-    const offscreenCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const rafId = useRef(0);
+    const offCanvas = useRef<HTMLCanvasElement | null>(null);
+    const offCtx = useRef<CanvasRenderingContext2D | null>(null);
+    const mainCtx = useRef<CanvasRenderingContext2D | null>(null);
     
-    // OPTIMIZATION: Pre-allocate array to avoid dynamic resizing overhead
-    const waveSources = useRef<WaveSource[]>([]);
-    const MAX_SOURCES = 25; 
+    // OPTIMIZATION: Single typed array for all wave data (better cache locality)
+    const MAX_SRC = 25;
+    const waveData = useRef(new Float32Array(MAX_SRC * STRIDE));
+    const srcCount = useRef(0);
+    const srcIdx = useRef(0);
     
-    const nextSourceId = useRef(0);
-    const isMouseOver = useRef(false);
-    const hasInitialized = useRef(false);
+    // OPTIMIZATION: Pack booleans into single number (bit flags)
+    const flags = useRef(0); // bit 0: mouseOver, bit 1: initialized
+    const FLAG_MOUSE_OVER = 1;
+    const FLAG_INITIALIZED = 2;
     
-    const lastMousePosition = useRef<{ x: number; y: number; timestamp: number }>({ x: 0, y: 0, timestamp: 0 });
-    const mouseVelocity = useRef(0);
+    // OPTIMIZATION: Pack position data into typed array instead of object
+    const mouseState = useRef(new Float64Array(5)); // [rectLeft, rectTop, lastX, lastY, lastTime]
+    const MS_RECT_L = 0, MS_RECT_T = 1, MS_LAST_X = 2, MS_LAST_Y = 3, MS_LAST_T = 4;
+    
+    const velocity = useRef(0);
     const phase = useRef(0);
     
-    // Visual params
-    const mouseWaveFrequency = useRef(0.04);
-    const mouseWaveSpeed = useRef(1.69);
-    const mouseWaveAmplitude = useRef(1.0);
+    // OPTIMIZATION: Pack wave params into typed array
+    const waveParams = useRef(new Float32Array(3)); // [freq, speed, amp]
+    const WP_FREQ = 0, WP_SPEED = 1, WP_AMP = 2;
 
-    // OPTIMIZATION: Stateless pseudo-random function replaces the memory-heavy Map
-    // Returns a consistent value between 0.4 and 1.0 for any given integer index
-    const getAmplitudeNoise = (index: number) => {
-        // Simple hash function (sine fracture)
-        const noise = Math.abs(Math.sin(index * 12.9898 + index) * 43758.5453) % 1;
-        return 0.4 + (noise * 0.6);
-    };
+    const strokeStyle = useRef('hsl(0 0% 0%)');
+    
+    // Buffers - will be allocated on resize
+    const buffers = useRef<{
+        disp: Float32Array;
+        fall: Float32Array;
+        y: Float32Array;
+        stamp: Float32Array;
+        numPts: number;
+        stampSize: number;
+    } | null>(null);
+    
+    // OPTIMIZATION: Pack dimensions into typed array
+    const dims = useRef(new Float32Array(4)); // [width, height, centerY, invCenterY]
+    const D_W = 0, D_H = 1, D_CY = 2, D_ICY = 3;
+    
+    // OPTIMIZATION: Pack ALL config into typed array (eliminates object property access)
+    const cfg = useRef(new Float32Array(14));
+    const C_GFREQ = 0, C_GAMP = 1, C_INF = 2, C_IINF = 3, C_DAMP = 4, C_LW = 5;
+    const C_LVT = 6, C_ILVT = 7, C_MINL = 8, C_LRNG = 9, C_VT = 10, C_IVT = 11;
+    const C_BPHASE = 12, C_PRNG = 13;
 
-    const randomizeWaveParameters = useCallback(() => {
-        mouseWaveFrequency.current = 0.02 + Math.random() * 0.05;
-        mouseWaveSpeed.current = 0.5 + Math.random() * 0.4;
-        mouseWaveAmplitude.current = 0.1 + Math.random() * 0.2;
+    const randomizeWaveParams = useCallback(() => {
+        const wp = waveParams.current;
+        wp[WP_FREQ] = 0.02 + Math.random() * 0.05;
+        wp[WP_SPEED] = 0.5 + Math.random() * 0.4;
+        wp[WP_AMP] = 0.1 + Math.random() * 0.2;
     }, []);
 
     useLayoutEffect(() => {
@@ -68,250 +104,402 @@ const InteractiveWaveBackground = ({
 
         const ctx = canvas.getContext('2d', { alpha: true });
         if (!ctx) return;
-        
-        // Performance: Sharp lines are faster to render
+        mainCtx.current = ctx;
         ctx.imageSmoothingEnabled = false;
         
-        offscreenCanvasRef.current = document.createElement('canvas');
-        offscreenCtxRef.current = offscreenCanvasRef.current.getContext('2d', { alpha: true });
-        const offscreenCtx = offscreenCtxRef.current;
-        if (!offscreenCtx) return;
+        offCanvas.current = document.createElement('canvas');
+        const octx = offCanvas.current.getContext('2d', { alpha: true });
+        if (!octx) return;
+        offCtx.current = octx;
 
-        const nodeSpacing = Math.PI;
+        const wd = waveData.current;
+        const ms = mouseState.current;
+        const c = cfg.current;
+        const d = dims.current;
+        const wp = waveParams.current;
+        const STEP = 3;
+        const vDecay = config.velocityDecayFactor;
+        
+        // Cache all config into typed array
+        c[C_GFREQ] = config.globalFrequency;
+        c[C_GAMP] = config.globalAmplitude;
+        c[C_INF] = config.horizontalInfluence;
+        c[C_IINF] = 1 / config.horizontalInfluence;
+        c[C_DAMP] = config.amplitudeDampening;
+        c[C_LW] = config.lineWidth;
+        c[C_LVT] = config.lingerVelocityThreshold;
+        c[C_ILVT] = 1 / config.lingerVelocityThreshold;
+        c[C_MINL] = config.minLinger;
+        c[C_LRNG] = config.maxLinger - config.minLinger;
+        c[C_VT] = config.velocityThreshold;
+        c[C_IVT] = 1 / config.velocityThreshold;
+        c[C_BPHASE] = config.basePhaseIncrement;
+        c[C_PRNG] = config.maxPhaseIncrement - config.basePhaseIncrement;
 
-        const resizeCanvas = (width: number, height: number) => {
-            canvas.width = width;
-            canvas.height = height;
-            if (offscreenCanvasRef.current) {
-                offscreenCanvasRef.current.width = width;
-                offscreenCanvasRef.current.height = height;
-            }
+        // Precompute stamp
+        const stampPx = ((c[C_INF] * 2 / STEP) | 0) + 1;
+        const stamp = new Float32Array(stampPx);
+        const invInf = c[C_IINF];
+        for (let i = 0; i < stampPx; i++) {
+            const localX = i * STEP - c[C_INF];
+            const nd = (localX < 0 ? -localX : localX) * invInf;
+            const t = 1 - nd;
+            stamp[i] = t > 0 ? t * t * (3 - t - t) : 0;
+        }
+
+        const updateStroke = () => {
+            const s = getComputedStyle(canvas);
+            const fg = s.getPropertyValue('--foreground').trim();
+            strokeStyle.current = fg ? `hsl(${fg})` : 'hsl(0 0% 0%)';
+        };
+        updateStroke();
+
+        const themeObs = new MutationObserver(() => requestAnimationFrame(updateStroke));
+        themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style', 'data-theme', 'data-mode'] });
+        document.body && themeObs.observe(document.body, { attributes: true, attributeFilter: ['class', 'style', 'data-theme', 'data-mode'] });
+        
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        mq.addEventListener('change', updateStroke);
+
+        const updateRect = () => {
+            const r = canvas.getBoundingClientRect();
+            ms[MS_RECT_L] = r.left;
+            ms[MS_RECT_T] = r.top;
         };
 
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isMouseOver.current || reducedMotion) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            // OPTIMIZATION: Spatial Throttling
-            // Don't add sources if mouse moved less than 3 pixels.
-            // This saves processing power when the mouse is idle or micro-jittering.
-            const dist = Math.abs(x - lastMousePosition.current.x) + Math.abs(y - lastMousePosition.current.y);
-            if (dist < 3) return; 
+        const resize = (w: number, h: number) => {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const oc = offCanvas.current!;
             
-            const now = performance.now();
-            const deltaTime = now - lastMousePosition.current.timestamp;
+            canvas.width = oc.width = w * dpr;
+            canvas.height = oc.height = h * dpr;
+            canvas.style.width = oc.style.width = `${w}px`;
+            canvas.style.height = oc.style.height = `${h}px`;
             
-            if (deltaTime > 0) {
-                const deltaX = x - lastMousePosition.current.x;
-                const deltaY = y - lastMousePosition.current.y;
-                const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-                const instantaneousVelocity = distance / deltaTime;
-                
-                const VELOCITY_SMOOTHING_FACTOR = 0.2;
-                mouseVelocity.current = (instantaneousVelocity * VELOCITY_SMOOTHING_FACTOR) + (mouseVelocity.current * (1 - VELOCITY_SMOOTHING_FACTOR));
-            }
+            ctx.scale(dpr, dpr);
+            octx!.scale(dpr, dpr);
             
-            lastMousePosition.current = { x, y, timestamp: now };
+            d[D_W] = w;
+            d[D_H] = h;
+            d[D_CY] = h * 0.5;
+            d[D_ICY] = 2 / h;
             
-            // Add new source
-            waveSources.current.push({
-                id: nextSourceId.current++,
-                x,
-                y,
-                strength: 1.0,
-                creationTime: now,
-                initialIntensity: mouseVelocity.current,
-            });
-
-            // OPTIMIZATION: Hard Limit (FIFO)
-            if (waveSources.current.length > MAX_SOURCES) {
-                waveSources.current.shift();
-            }
-        };
-
-        const handleDocumentMouseLeave = (e: MouseEvent) => {
-            if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
-                isMouseOver.current = false;
-                hasInitialized.current = false;
-            }
-        };
-
-        const handleDocumentMouseEnter = (e: MouseEvent) => {
-            if (!hasInitialized.current) {
-                randomizeWaveParameters();
-                hasInitialized.current = true;
-            }
-            isMouseOver.current = true;
-            const rect = canvas.getBoundingClientRect();
-            lastMousePosition.current = { 
-                x: e.clientX - rect.left, 
-                y: e.clientY - rect.top, 
-                timestamp: performance.now() 
+            const numPts = ((w / STEP) | 0) + 2;
+            buffers.current = {
+                disp: new Float32Array(numPts),
+                fall: new Float32Array(numPts),
+                y: new Float32Array(numPts),
+                stamp,
+                numPts,
+                stampSize: stampPx
             };
+            
+            updateRect();
+            updateStroke();
         };
 
-        const draw = () => {
-            const now = performance.now();
-            const offscreenCanvas = offscreenCanvasRef.current;
-            const offscreenCtx = offscreenCtxRef.current;
+        const onMove = (e: MouseEvent) => {
+            if (!(flags.current & FLAG_MOUSE_OVER) || reducedMotion) return;
+
+            const x = e.clientX - ms[MS_RECT_L];
+            const y = e.clientY - ms[MS_RECT_T];
+            const dx = x - ms[MS_LAST_X];
+            const dy = y - ms[MS_LAST_Y];
+            const dSq = dx * dx + dy * dy;
             
-            if (!offscreenCtx || !offscreenCanvas || offscreenCanvas.width <= 0 || offscreenCanvas.height <= 0) {
-                animationFrameId.current = requestAnimationFrame(draw);
+            if (dSq < 9) return;
+            
+            const now = performance.now();
+            const dt = now - ms[MS_LAST_T];
+            
+            if (dt > 0) {
+                const v = Math.sqrt(dSq) / dt;
+                velocity.current = v * 0.2 + velocity.current * 0.8;
+            }
+            
+            ms[MS_LAST_X] = x;
+            ms[MS_LAST_Y] = y;
+            ms[MS_LAST_T] = now;
+            
+            const sc = srcCount.current;
+            let idx: number;
+            if (sc < MAX_SRC) {
+                idx = sc * STRIDE;
+                srcCount.current = sc + 1;
+            } else {
+                idx = srcIdx.current * STRIDE;
+                srcIdx.current = (srcIdx.current + 1) % MAX_SRC;
+            }
+
+            wd[idx] = x;
+            wd[idx + 1] = y;
+            wd[idx + 2] = now;
+            wd[idx + 3] = velocity.current;
+            wd[idx + 4] = 1;
+        };
+
+        const onLeave = (e: MouseEvent) => {
+            if (e.clientY <= 0 || e.clientX <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+                flags.current &= ~(FLAG_MOUSE_OVER | FLAG_INITIALIZED);
+            }
+        };
+
+        const onEnter = (e: MouseEvent) => {
+            if (!(flags.current & FLAG_INITIALIZED)) {
+                randomizeWaveParams();
+                flags.current |= FLAG_INITIALIZED;
+            }
+            flags.current |= FLAG_MOUSE_OVER;
+            updateRect();
+            ms[MS_LAST_X] = e.clientX - ms[MS_RECT_L];
+            ms[MS_LAST_Y] = e.clientY - ms[MS_RECT_T];
+            ms[MS_LAST_T] = performance.now();
+        };
+
+        // OPTIMIZATION: Main draw loop - maximally optimized
+        const draw = () => {
+            const buf = buffers.current;
+            const oc = offCanvas.current;
+            const octx = offCtx.current;
+            const mctx = mainCtx.current;
+            
+            if (!buf || !oc || !octx || !mctx) {
+                rafId.current = requestAnimationFrame(draw);
                 return;
             }
 
-            // OPTIMIZATION: In-Place Array Update (Zero Garbage Collection)
-            // Instead of .map().filter() which creates new arrays every frame,
-            // we iterate, update, and compact the array manually.
-            let activeCount = 0;
-            const sources = waveSources.current;
-            
-            for (let i = 0; i < sources.length; i++) {
-                const source = sources[i];
-                
-                // Update strength logic
-                const intensityRatio = Math.min(source.initialIntensity / config.lingerVelocityThreshold, 1.0);
-                const lingerDuration = config.minLinger + (config.maxLinger - config.minLinger) * intensityRatio;
-                const age = now - source.creationTime;
-                
-                // If alive, update and keep
-                if (age < lingerDuration) {
-                    const progress = age / lingerDuration; // 0 to 1
-                    // Original decay formula
-                    source.strength = (1.0 - progress) ** 2;
-                    
-                    // Compact array: move to front if needed
-                    if (i !== activeCount) {
-                        sources[activeCount] = source;
-                    }
-                    activeCount++;
-                }
-            }
-            // Truncate array to remove dead items
-            sources.length = activeCount;
+            const now = performance.now();
+            const { disp, fall, y, stamp: stmp, numPts, stampSize } = buf;
+            const w = d[D_W], h = d[D_H], cy = d[D_CY], icy = d[D_ICY];
+            const inf = c[C_INF], iinf = c[C_IINF], damp = c[C_DAMP];
+            const ilvt = c[C_ILVT], minL = c[C_MINL], lrng = c[C_LRNG];
+            const gfreq = c[C_GFREQ], gamp = c[C_GAMP];
+            const mfreq = wp[WP_FREQ], mspeed = wp[WP_SPEED], mamp = wp[WP_AMP];
+            const ph = phase.current;
 
-            // Physics Update
-            mouseVelocity.current *= config.velocityDecayFactor;
+            // OPTIMIZATION: Unrolled buffer clear (faster than .fill(0) for small buffers)
+            // For larger buffers, .fill is faster, but we'll use a hybrid approach
+            let i = 0;
+            const len = numPts;
+            // Unroll by 8 for the bulk
+            const len8 = len - (len % 8);
+            for (; i < len8; i += 8) {
+                disp[i] = disp[i+1] = disp[i+2] = disp[i+3] = 
+                disp[i+4] = disp[i+5] = disp[i+6] = disp[i+7] = 0;
+                fall[i] = fall[i+1] = fall[i+2] = fall[i+3] = 
+                fall[i+4] = fall[i+5] = fall[i+6] = fall[i+7] = 0;
+            }
+            // Handle remainder
+            for (; i < len; i++) { disp[i] = 0; fall[i] = 0; }
+
+            // Physics + stamping in single pass
+            i = 0;
+            let sc = srcCount.current;
+            while (i < sc) {
+                const base = i * STRIDE;
+                const intensity = wd[base + F_INTENSITY];
+                const created = wd[base + F_TIME];
+                
+                let ratio = intensity * ilvt;
+                if (ratio > 1) ratio = 1;
+                const linger = minL + lrng * ratio;
+                const age = now - created;
+
+                if (age >= linger) {
+                    // Swap-and-pop
+                    const last = (sc - 1) * STRIDE;
+                    if (base !== last) {
+                        wd[base] = wd[last];
+                        wd[base+1] = wd[last+1];
+                        wd[base+2] = wd[last+2];
+                        wd[base+3] = wd[last+3];
+                        wd[base+4] = wd[last+4];
+                    }
+                    sc--;
+                    continue;
+                }
+
+                const prog = age / linger;
+                const inv = 1 - prog;
+                const str = inv * inv;
+                wd[base + F_STRENGTH] = str;
+                
+                const sx = wd[base], sy = wd[base + 1];
+                const distY = sy < cy ? cy - sy : sy - cy;
+                const advAmp = (1 - distY * icy) * cy * damp;
+
+                // Stamp contribution
+                let si = ((sx - inf) / STEP) | 0;
+                if (si < 0) si = 0;
+                let ei = ((sx + inf) / STEP) | 0;
+                if (ei >= numPts) ei = numPts - 1;
+
+                // OPTIMIZATION: Unrolled inner stamp loop by 4
+                const loopEnd = ei - ((ei - si + 1) % 4);
+                let j = si;
+                
+                for (; j <= loopEnd; j += 4) {
+                    // Iteration 1
+                    let x = j * STEP;
+                    let sti = ((x - sx + inf) / STEP) | 0;
+                    if (sti >= 0 && sti < stampSize) {
+                        let fo = stmp[sti] * str;
+                        let wph = x * mfreq + ph * mspeed;
+                        let ni = (wph * INV_PI) | 0;
+                        let a1 = LUT[NOISE_OFFSET + (ni & NOISE_MASK)];
+                        let a2 = LUT[NOISE_OFFSET + ((ni + 1) & NOISE_MASK)];
+                        let fp = (wph - ni * PI) * INV_PI;
+                        let sf = (1 - cos(fp * PI)) * 0.5;
+                        let ia = a1 + (a2 - a1) * sf;
+                        disp[j] += sin(wph) * advAmp * fo * mamp * ia;
+                        if (fo > fall[j]) fall[j] = fo;
+                    }
+                    
+                    // Iteration 2
+                    x = (j+1) * STEP;
+                    sti = ((x - sx + inf) / STEP) | 0;
+                    if (sti >= 0 && sti < stampSize) {
+                        let fo = stmp[sti] * str;
+                        let wph = x * mfreq + ph * mspeed;
+                        let ni = (wph * INV_PI) | 0;
+                        let a1 = LUT[NOISE_OFFSET + (ni & NOISE_MASK)];
+                        let a2 = LUT[NOISE_OFFSET + ((ni + 1) & NOISE_MASK)];
+                        let fp = (wph - ni * PI) * INV_PI;
+                        let sf = (1 - cos(fp * PI)) * 0.5;
+                        let ia = a1 + (a2 - a1) * sf;
+                        disp[j+1] += sin(wph) * advAmp * fo * mamp * ia;
+                        if (fo > fall[j+1]) fall[j+1] = fo;
+                    }
+                    
+                    // Iteration 3
+                    x = (j+2) * STEP;
+                    sti = ((x - sx + inf) / STEP) | 0;
+                    if (sti >= 0 && sti < stampSize) {
+                        let fo = stmp[sti] * str;
+                        let wph = x * mfreq + ph * mspeed;
+                        let ni = (wph * INV_PI) | 0;
+                        let a1 = LUT[NOISE_OFFSET + (ni & NOISE_MASK)];
+                        let a2 = LUT[NOISE_OFFSET + ((ni + 1) & NOISE_MASK)];
+                        let fp = (wph - ni * PI) * INV_PI;
+                        let sf = (1 - cos(fp * PI)) * 0.5;
+                        let ia = a1 + (a2 - a1) * sf;
+                        disp[j+2] += sin(wph) * advAmp * fo * mamp * ia;
+                        if (fo > fall[j+2]) fall[j+2] = fo;
+                    }
+                    
+                    // Iteration 4
+                    x = (j+3) * STEP;
+                    sti = ((x - sx + inf) / STEP) | 0;
+                    if (sti >= 0 && sti < stampSize) {
+                        let fo = stmp[sti] * str;
+                        let wph = x * mfreq + ph * mspeed;
+                        let ni = (wph * INV_PI) | 0;
+                        let a1 = LUT[NOISE_OFFSET + (ni & NOISE_MASK)];
+                        let a2 = LUT[NOISE_OFFSET + ((ni + 1) & NOISE_MASK)];
+                        let fp = (wph - ni * PI) * INV_PI;
+                        let sf = (1 - cos(fp * PI)) * 0.5;
+                        let ia = a1 + (a2 - a1) * sf;
+                        disp[j+3] += sin(wph) * advAmp * fo * mamp * ia;
+                        if (fo > fall[j+3]) fall[j+3] = fo;
+                    }
+                }
+                
+                // Handle remainder
+                for (; j <= ei; j++) {
+                    const x = j * STEP;
+                    const sti = ((x - sx + inf) / STEP) | 0;
+                    if (sti < 0 || sti >= stampSize) continue;
+                    const fo = stmp[sti] * str;
+                    const wph = x * mfreq + ph * mspeed;
+                    const ni = (wph * INV_PI) | 0;
+                    const a1 = LUT[NOISE_OFFSET + (ni & NOISE_MASK)];
+                    const a2 = LUT[NOISE_OFFSET + ((ni + 1) & NOISE_MASK)];
+                    const fp = (wph - ni * PI) * INV_PI;
+                    const sf = (1 - cos(fp * PI)) * 0.5;
+                    const ia = a1 + (a2 - a1) * sf;
+                    disp[j] += sin(wph) * advAmp * fo * mamp * ia;
+                    if (fo > fall[j]) fall[j] = fo;
+                }
+                
+                i++;
+            }
+            srcCount.current = sc;
+
+            velocity.current *= vDecay;
             
-            const speedInterpolation = Math.min(mouseVelocity.current / config.velocityThreshold, 1.0);
-            const dynamicPhaseIncrement = config.basePhaseIncrement + (config.maxPhaseIncrement - config.basePhaseIncrement) * speedInterpolation;
-            
+            let spd = velocity.current * c[C_IVT];
+            if (spd > 1) spd = 1;
+            const phaseInc = c[C_BPHASE] + c[C_PRNG] * spd;
+
+            // OPTIMIZATION: Compute Y with unrolled loop
+            const yLen4 = numPts - (numPts % 4);
+            for (i = 0; i < yLen4; i += 4) {
+                const x0 = i * STEP, x1 = (i+1) * STEP, x2 = (i+2) * STEP, x3 = (i+3) * STEP;
+                y[i] = cy + sin(x0 * gfreq + ph) * gamp * (1 - fall[i]) + disp[i];
+                y[i+1] = cy + sin(x1 * gfreq + ph) * gamp * (1 - fall[i+1]) + disp[i+1];
+                y[i+2] = cy + sin(x2 * gfreq + ph) * gamp * (1 - fall[i+2]) + disp[i+2];
+                y[i+3] = cy + sin(x3 * gfreq + ph) * gamp * (1 - fall[i+3]) + disp[i+3];
+            }
+            for (; i < numPts; i++) {
+                y[i] = cy + sin(i * STEP * gfreq + ph) * gamp * (1 - fall[i]) + disp[i];
+            }
+
             // Draw
-            const width = offscreenCanvas.width;
-            const height = offscreenCanvas.height;
-            const centerY = height / 2;
+            octx.clearRect(0, 0, w, h);
+            octx.beginPath();
+            octx.moveTo(0, y[0]);
             
-            offscreenCtx.clearRect(0, 0, width, height);
-            offscreenCtx.beginPath();
-            offscreenCtx.moveTo(0, centerY);
-
-            // OPTIMIZATION: Spatial Downsampling
-            // Step 3 is visually indistinguishable from Step 1 but 3x faster
-            const STEP = 3; 
-            
-            // Cache constants outside loop
-            const globalFreq = config.globalFrequency;
-            const globalAmp = config.globalAmplitude;
-            const influence = config.horizontalInfluence;
-            const dampening = config.amplitudeDampening;
-            const currentMouseWaveFreq = mouseWaveFrequency.current;
-            const currentMouseWaveSpeed = mouseWaveSpeed.current;
-            const currentMouseWaveAmp = mouseWaveAmplitude.current;
-            const currentPhase = phase.current;
-
-            for (let i = 0; i <= width; i += STEP) {
-                const globalWave = Math.sin((i * globalFreq) + currentPhase) * globalAmp;
-                let totalMouseDisplacement = 0;
-                let totalFalloff = 0;
-
-                // Inner loop (Sources)
-                for (let j = 0; j < activeCount; j++) {
-                    const source = sources[j];
-                    
-                    // OPTIMIZATION: Bounding Box Check
-                    // Skip calculation if x is too far away
-                    if (i < source.x - influence || i > source.x + influence) continue;
-
-                    const distanceToSourceX = Math.abs(i - source.x);
-                    const normalizedDistance = distanceToSourceX / influence;
-                    
-                    // Smoothstep Falloff
-                    const t = 1.0 - normalizedDistance;
-                    const horizontalFalloff = t * t * (3.0 - 2.0 * t);
-                    
-                    const currentDistance = Math.abs(source.y - centerY);
-                    const adverseAmplitude = (1 - (currentDistance / centerY)) * centerY * dampening;
-                    
-                    const wavePhase = (i * currentMouseWaveFreq) + (currentPhase * currentMouseWaveSpeed);
-                    const sineWave = Math.sin(wavePhase);
-                    
-                    // Stateless Amplitude Noise (Replaces Map)
-                    const nodeIndex1 = Math.floor(wavePhase / nodeSpacing);
-                    const nodeIndex2 = nodeIndex1 + 1;
-                    const amp1 = getAmplitudeNoise(nodeIndex1);
-                    const amp2 = getAmplitudeNoise(nodeIndex2);
-                    
-                    const fractionalPos = (wavePhase % nodeSpacing) / nodeSpacing;
-                    const smoothFractionalPos = (1 - Math.cos(fractionalPos * Math.PI)) / 2;
-                    const interpolatedAmplitude = amp1 * (1 - smoothFractionalPos) + amp2 * smoothFractionalPos;
-                    
-                    const displacement = sineWave * adverseAmplitude * horizontalFalloff * currentMouseWaveAmp * interpolatedAmplitude * source.strength;
-                    totalMouseDisplacement += displacement;
-                    
-                    // Track max falloff for blending
-                    if (horizontalFalloff * source.strength > totalFalloff) {
-                        totalFalloff = horizontalFalloff * source.strength;
-                    }
-                }
-                
-                // Combine
-                const finalY = centerY + (globalWave * (1 - totalFalloff)) + totalMouseDisplacement;
-                offscreenCtx.lineTo(i, finalY);
+            // OPTIMIZATION: Unrolled path building
+            const pathLen4 = numPts - (numPts % 4);
+            for (i = 1; i < pathLen4; i += 4) {
+                octx.lineTo(i * STEP, y[i]);
+                octx.lineTo((i+1) * STEP, y[i+1]);
+                octx.lineTo((i+2) * STEP, y[i+2]);
+                octx.lineTo((i+3) * STEP, y[i+3]);
             }
-            
-            // Finish Line
-            offscreenCtx.lineTo(width, centerY);
+            for (; i < numPts; i++) octx.lineTo(i * STEP, y[i]);
+            octx.lineTo(w, cy);
 
-            const style = getComputedStyle(canvas);
-            const foregroundColorValue = style.getPropertyValue('--foreground');
-            offscreenCtx.strokeStyle = `hsl(${foregroundColorValue})`;
-            offscreenCtx.lineWidth = config.lineWidth;
-            offscreenCtx.stroke();
+            octx.strokeStyle = strokeStyle.current;
+            octx.lineWidth = c[C_LW];
+            octx.stroke();
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(offscreenCanvas, 0, 0);
+            mctx.clearRect(0, 0, w, h);
+            mctx.drawImage(oc, 0, 0, w, h);
 
-            phase.current += dynamicPhaseIncrement;
-            animationFrameId.current = requestAnimationFrame(draw);
+            phase.current += phaseInc;
+            rafId.current = requestAnimationFrame(draw);
         };
 
-        const observer = new ResizeObserver(entries => {
-            const entry = entries[0];
-            if (entry) resizeCanvas(entry.contentRect.width, entry.contentRect.height);
+        const resizeObs = new ResizeObserver(e => {
+            const entry = e[0];
+            if (entry) resize(entry.contentRect.width, entry.contentRect.height);
         });
-        observer.observe(container);
+        resizeObs.observe(container);
         
-        if (!hasInitialized.current) {
-            randomizeWaveParameters();
-            hasInitialized.current = true;
+        if (!(flags.current & FLAG_INITIALIZED)) {
+            randomizeWaveParams();
+            flags.current |= FLAG_INITIALIZED;
         }
         
-        canvas.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseleave', handleDocumentMouseLeave);
-        document.addEventListener('mouseenter', handleDocumentMouseEnter);
-        animationFrameId.current = requestAnimationFrame(draw);
+        canvas.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseleave', onLeave);
+        document.addEventListener('mouseenter', onEnter);
+        window.addEventListener('scroll', updateRect);
+        
+        rafId.current = requestAnimationFrame(draw);
 
         return () => {
-            observer.disconnect();
-            canvas.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseleave', handleDocumentMouseLeave);
-            document.removeEventListener('mouseenter', handleDocumentMouseEnter);
-            if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+            resizeObs.disconnect();
+            themeObs.disconnect();
+            mq.removeEventListener('change', updateStroke);
+            canvas.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseleave', onLeave);
+            document.removeEventListener('mouseenter', onEnter);
+            window.removeEventListener('scroll', updateRect);
+            cancelAnimationFrame(rafId.current);
         };
-    }, [config, randomizeWaveParameters, reducedMotion]);
+    }, [config, randomizeWaveParams, reducedMotion]);
 
     return (
         <main ref={containerRef} className="absolute inset-0 w-full h-full grid">
