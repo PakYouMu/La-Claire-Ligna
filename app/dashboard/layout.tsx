@@ -8,7 +8,7 @@ export default function DashboardLayout({
 }) {
   return (
     // 1. Lock height to screen, disable scroll, relative positioning
-    <div className="h-screen w-full overflow-hidden relative bg-background">
+    <div className="h-screen w-full relative bg-background">
       
       {/* 2. Navigation (Absolute Top) */}
       <NavOverlay>
@@ -20,7 +20,7 @@ export default function DashboardLayout({
           - h-full ensures it takes remaining space
           - overflow-hidden ensures no scroll bars appear on the page body
       */}
-      <div className="relative w-full h-full pt-32 md:pt-40 overflow-hidden">
+      <div className="relative w-full h-full pt-32 md:pt-40">
         {children}
       </div>
       

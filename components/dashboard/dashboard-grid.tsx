@@ -11,32 +11,22 @@ interface DashboardGridProps {
   balance: number;
   stats: { activeCount: number; totalReceivables: number };
   loansTable: React.ReactNode;
-  borrowerList: React.ReactNode;
 }
 
 export function DashboardGrid({ 
   role, 
   balance, 
   stats, 
-  loansTable, 
-  borrowerList 
+  loansTable
 }: DashboardGridProps) {
   
   const { reduceMotion } = useMotion(); 
   const formatter = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
   return (
-    <div className="h-full w-full p-4 md:p-8 relative">
-      
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 ml-2">
-        <header>
-          <h1 className="text-3xl font-bold tracking-tight">Loan Dashboard</h1>
-          <p className="text-muted-foreground">
-             Welcome back, {role === 'superuser' ? 'Boss' : 'Admin'}.
-          </p>
-        </header>
-      </div>
-
+    // CHANGE 1: 'max-w-5xl' forces the table columns to shrink/compact naturally.
+    // CHANGE 2: Reduced gap-4 to 'gap-3' for tighter spacing.
+    <div className="h-full w-full max-w-5xl mx-auto p-4 relative flex flex-col gap-3">
       <MagicBento 
         disableAnimations={reduceMotion}
         enableSpotlight={true}
@@ -46,17 +36,17 @@ export function DashboardGrid({
         enableBorderGlow={true}
         spotlightRadius={300}
         glowColor="16, 185, 129"
-        // GLOBAL DEFAULTS: Subtle movement
         tiltIntensity={4}
         magnetStrength={0.02}
+        // CHANGE 3: Tighter grid gap inside the bento
+        className="gap-3" 
       >
-        
-        {/* 1. Cash - Small card, standard fun movement */}
+        {/* 1. Cash */}
         <BentoCard className="col-span-1" title="Cash On-Hand" icon={<Wallet className="h-4 w-4"/>}>
            <div className="mt-2">
-             <div className="text-3xl font-bold">{formatter.format(balance)}</div>
+             <div className="text-2xl font-bold">{formatter.format(balance)}</div>
              <p className="text-xs text-muted-foreground mt-1">Available to lend</p>
-             <div className="mt-4 relative z-20"> 
+             <div className="mt-3 relative z-20"> 
                 <AddCapitalDialog />
              </div>
            </div>
@@ -65,11 +55,11 @@ export function DashboardGrid({
         {/* 2. Receivables */}
         <BentoCard className="col-span-1" title="Receivables" icon={<TrendingUp className="h-4 w-4"/>}>
            <div className="mt-2">
-             <div className="text-3xl font-bold text-blue-500">
+             <div className="text-2xl font-bold text-blue-500">
                 {formatter.format(stats.totalReceivables)}
              </div>
              <p className="text-xs text-muted-foreground mt-1">Principal + Interest Due</p>
-             <div className="mt-4 text-xs font-mono bg-blue-500/10 text-blue-600 px-2 py-1 rounded w-fit">
+             <div className="mt-3 text-xs font-mono bg-blue-500/10 text-blue-600 px-2 py-1 rounded w-fit">
                 Net: {formatter.format(balance + stats.totalReceivables)}
              </div>
            </div>
@@ -78,38 +68,27 @@ export function DashboardGrid({
         {/* 3. Active Count */}
         <BentoCard className="col-span-1" title="Active Borrowers" icon={<Activity className="h-4 w-4"/>}>
            <div className="mt-2">
-             <div className="text-3xl font-bold text-orange-500">{stats.activeCount}</div>
+             <div className="text-2xl font-bold text-orange-500">{stats.activeCount}</div>
              <p className="text-xs text-muted-foreground mt-1">Open loans</p>
            </div>
         </BentoCard>
 
-        {/* 4. Active Loans Table (Wide) 
-            Use custom props to reduce movement significantly 
-        */}
+        {/* Loan Management Table */}
         <BentoCard 
-            className="col-span-1 md:col-span-2 row-span-2" 
+            className="col-span-1 md:col-span-3 row-span-2" 
             title="Loan Management" 
             icon={<Users className="h-4 w-4"/>}
-            tiltIntensity={2} // Very low tilt
-            magnetStrength={0.01} // Almost no movement
+            tiltIntensity={1}
+            magnetStrength={0.01} 
         >
-           <div className="h-[400px] lg:h-[500px] overflow-auto pr-2 relative z-10">
+           {/* 
+              h-full ensures it uses the card height.
+              min-h adds stability.
+           */}
+           <div className="h-full min-h-[400px] overflow-auto pr-2 relative z-10">
               {loansTable}
            </div>
         </BentoCard>
-
-        {/* 5. Borrower Directory (Tall) */}
-        <BentoCard 
-            className="col-span-1 row-span-2" 
-            title="Directory" 
-            icon={<Users className="h-4 w-4"/>}
-            tiltIntensity={3}
-        >
-           <div className="h-[400px] lg:h-[500px] overflow-auto pr-2 relative z-10">
-              {borrowerList}
-           </div>
-        </BentoCard>
-
       </MagicBento>
 
       <div className="fixed bottom-8 left-8 z-50">

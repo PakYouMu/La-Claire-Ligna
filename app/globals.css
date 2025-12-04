@@ -60,7 +60,7 @@
 
 @layer base {
   html, body {
-    @apply h-full overflow-hidden;
+    @apply h-full;
   }
   * {
     @apply border-border;
@@ -195,4 +195,10 @@
   z-index: 2;
   position: relative;
   background: inherit; /* Ensures content covers particles if needed */
+}
+
+.signature-modal button[data-slot='dialog-close']:focus {
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-width: 0px !important;
+  box-shadow: none !important;
 }

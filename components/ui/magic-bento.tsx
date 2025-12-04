@@ -6,6 +6,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 // --- Types ---
 export interface BentoProps {
   children: React.ReactNode;
+  className?: string; // <--- ADDED THIS
   enableStars?: boolean;
   enableSpotlight?: boolean;
   enableBorderGlow?: boolean;
@@ -128,7 +129,6 @@ export const BentoCard: React.FC<BentoCardProps> = ({ children, className, title
     magnetStrength: globalMagnet = 0.02
   } = config || {};
 
-  // Robust fallback to ensure these are ALWAYS numbers (prevents useEffect size mismatch)
   const activeTilt = Number(tiltIntensity ?? globalTilt ?? 4);
   const activeMagnet = Number(magnetStrength ?? globalMagnet ?? 0.02);
 
@@ -265,7 +265,8 @@ const MagicBento: React.FC<BentoProps> = (props) => {
   return (
     <div className="bento-section">
       <GlobalSpotlight gridRef={gridRef} enabled={props.enableSpotlight} radius={props.spotlightRadius} color={props.glowColor} />
-      <div className="card-grid" ref={gridRef}>
+      {/* ADDED: props.className here so you can pass "gap-4" etc. */}
+      <div className={`card-grid ${props.className || ''}`} ref={gridRef}>
         {React.Children.map(props.children, child => {
           if (React.isValidElement(child)) {
             return React.cloneElement(child as any, { config: props });

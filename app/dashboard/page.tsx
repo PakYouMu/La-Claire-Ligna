@@ -22,15 +22,12 @@ export default async function DashboardPage() {
 
   // C. Render
   // We pass the Server Components (<ActiveLoansTable />) as props to the Client Component.
-  // This pattern makes your app extremely fast because the JS for the table logic
-  // stays on the server, while the Bento animations run on the client.
   return (
     <DashboardGrid
       role={role}
       balance={balance}
       stats={stats}
       loansTable={<ActiveLoansTable />}
-      borrowerList={<BorrowerList />}
     />
   );
 }
