@@ -30,20 +30,23 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
     
-    /* Responsive spacing variables */
-    --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
-    --spacing-sm: clamp(0.5rem, 1vw, 0.75rem);
-    --spacing-md: clamp(0.75rem, 1.5vw, 1rem);
-    --spacing-lg: clamp(1rem, 2vw, 1.5rem);
-    --spacing-xl: clamp(1.5rem, 3vw, 2rem);
+    /* === RESPONSIVE VARIABLES === */
+    /* Mobile (375px) */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
     
-    /* Responsive text sizes */
-    --text-xs: clamp(0.625rem, 0.7vw, 0.75rem);
-    --text-sm: clamp(0.75rem, 0.85vw, 0.875rem);
-    --text-base: clamp(0.875rem, 1vw, 1rem);
-    --text-lg: clamp(1rem, 1.15vw, 1.125rem);
-    --text-xl: clamp(1.125rem, 1.25vw, 1.25rem);
-    --text-2xl: clamp(1.25rem, 1.5vw, 1.5rem);
+    /* Desktop (1600px+) */
+    @media (min-width: 1600px) {
+      --spacing-md: 1.5rem; 
+    }
+
+    /* Text Scaling */
+    --text-xs: clamp(0.75rem, 0.6vw, 0.875rem);
+    --text-sm: clamp(0.875rem, 0.7vw, 1rem);
+    --text-base: clamp(1rem, 0.8vw, 1.125rem);
+    --text-xl: clamp(1.25rem, 1vw, 1.5rem);
+    --text-2xl: clamp(1.5rem, 1.2vw, 2rem);
   }
   
   .dark {
@@ -84,8 +87,6 @@
   body {
     @apply bg-background text-foreground;
   }
-  
-  /* FIX FOR TEXT SELECTION */
   ::selection {
     background-color: hsl(var(--foreground));
     color: hsl(var(--background));
@@ -94,55 +95,39 @@
 }
 
 /* === RESPONSIVE TABLE STYLES === */
-
 .responsive-table-container {
   width: 100%;
   overflow-x: auto;
   border-radius: calc(var(--radius) + 2px);
 }
-
 .responsive-table {
   width: 100%;
   min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
 }
-
 .responsive-table-header {
   font-size: var(--text-xs);
   padding: var(--spacing-sm) var(--spacing-xs);
   white-space: nowrap;
 }
-
 .responsive-table-cell {
   font-size: var(--text-sm);
   padding: var(--spacing-sm) var(--spacing-xs);
 }
 
-/* Adaptive column widths based on viewport */
 @media (max-width: 767px) {
-  .col-borrower { width: 25%; }
+  .col-borrower { width: 30%; }
   .col-start-date { display: none; }
-  .col-next-due { width: 20%; }
+  .col-next-due { width: 25%; }
   .col-principal { display: none; }
-  .col-payday-due { width: 20%; }
-  .col-balance { width: 20%; }
-  .col-signature { width: 8%; }
-  .col-action { width: 7%; }
+  .col-payday-due { display: none; } 
+  .col-balance { width: 25%; }
+  .col-signature { display: none; }
+  .col-action { width: 20%; }
 }
 
-@media (min-width: 768px) and (max-width: 1279px) {
-  .col-borrower { width: 18%; }
-  .col-start-date { width: 10%; }
-  .col-next-due { width: 12%; }
-  .col-principal { width: 12%; }
-  .col-payday-due { width: 13%; }
-  .col-balance { width: 13%; }
-  .col-signature { width: 10%; }
-  .col-action { width: 12%; }
-}
-
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
   .col-borrower { width: 16%; }
   .col-start-date { width: 11%; }
   .col-next-due { width: 12%; }
@@ -153,7 +138,7 @@
   .col-action { width: 13%; }
 }
 
-/* Responsive text utilities */
+/* Utilities */
 .text-responsive-xs { font-size: var(--text-xs); }
 .text-responsive-sm { font-size: var(--text-sm); }
 .text-responsive-base { font-size: var(--text-base); }
@@ -161,88 +146,67 @@
 .text-responsive-xl { font-size: var(--text-xl); }
 .text-responsive-2xl { font-size: var(--text-2xl); }
 
-/* Responsive spacing utilities */
 .p-responsive { padding: var(--spacing-md); }
 .px-responsive { padding-left: var(--spacing-md); padding-right: var(--spacing-md); }
 .py-responsive { padding-top: var(--spacing-md); padding-bottom: var(--spacing-md); }
 .gap-responsive { gap: var(--spacing-md); }
 
-/* --- METALLIC SYSTEM --- */
-
-.metallic-text-effect {
-  color: transparent;
-  background-clip: text;
-  -webkit-background-clip: text;
-  padding-bottom: 0.1em; 
-  background-image: 
-    radial-gradient(
-      circle 100px at var(--mouse-x, -999px) var(--mouse-y, -999px),
-      rgba(255, 255, 255, 1) 0%,
-      rgba(255, 255, 255, 0.5) 15%,
-      transparent 40%
-    ),
-    linear-gradient(
-      135deg,
-      #333 0%,
-      #666 25%,
-      #333 50%,
-      #666 75%,
-      #333 100%
-    );
-  background-size: 100% 100%;
-  will-change: background-image;
-}
-
-.dark .metallic-text-effect {
-  background-image: 
-    radial-gradient(
-      circle 120px at var(--mouse-x, -999px) var(--mouse-y, -999px),
-      rgba(255, 255, 255, 1) 0%,
-      rgba(255, 255, 255, 0.6) 20%,
-      transparent 50%
-    ),
-    linear-gradient(
-      135deg,
-      #9ca3af 0%,
-      #e5e7eb 25%,
-      #9ca3af 50%,
-      #e5e7eb 75%,
-      #9ca3af 100%
-    );
-}
+/* === GRID LAYOUT SYSTEM === */
 
 .bento-section {
   width: 100%;
-  padding: clamp(1rem, 2vw, 1.25rem);
+  padding-bottom: 1rem;
 }
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: clamp(0.75rem, 1.5vw, 1.25rem);
   width: 100%;
-  max-width: 1400px;
   margin: 0 auto;
+  gap: var(--spacing-md);
+  
+  /* 1. Mobile < 395px: 1 Column */
+  grid-template-columns: 1fr; 
+  max-width: 100%;
 }
 
-@media (min-width: 768px) {
+/* 2. Compact -> Laptop (395px - 1279px): 2 Columns */
+@media (min-width: 395px) {
   .card-grid {
-    grid-template-columns: repeat(3, 1fr);
-    grid-auto-rows: minmax(180px, auto);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.col-span-1 { grid-column: span 1; }
-.col-span-2 { grid-column: span 1; }
-.col-span-3 { grid-column: span 1; } 
-.row-span-2 { grid-row: span 1; }
+/* 3. Large Screens (1280px+): 4 Columns */
+@media (min-width: 1280px) {
+  .card-grid {
+    grid-template-columns: repeat(4, 1fr); 
+    max-width: 100%;
+  }
+}
 
-@media (min-width: 768px) {
+/* === SPANS === */
+
+/* Default Item Span */
+.col-span-1 { grid-column: span 1; }
+
+/* Chart Span */
+/* Default (<395px): Span 1 (Safety) */
+.col-span-2 { grid-column: span 1; }
+
+/* 395px+: Span 2 */
+/* In a 2-col grid, this equals 100% width (Stacked) */
+/* In a 4-col grid, this equals 50% width (Side-by-Side) */
+@media (min-width: 395px) {
   .col-span-2 { grid-column: span 2; }
-  .col-span-3 { grid-column: span 3; }
+}
+
+/* Row Spans */
+.row-span-2 { grid-row: span 1; }
+@media (min-width: 768px) {
   .row-span-2 { grid-row: span 2; }
 }
 
+/* === CARD STYLES === */
 .magic-bento-card {
   position: relative;
   background-color: hsl(var(--card));
@@ -282,13 +246,4 @@
   background: inherit;
 }
 
-/* Override padding for table cards that need full bleed content */
-.magic-bento-card__content--no-padding {
-  padding: 0;
-}
-
-.signature-modal button[data-slot='dialog-close']:focus {
-  --tw-ring-offset-width: 0px !important;
-  --tw-ring-width: 0px !important;
-  box-shadow: none !important;
-}
+.magic-bento-card__content--no-padding { padding: 0; }

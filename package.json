@@ -25,6 +25,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-image-crop": "^11.0.10",
+    "recharts": "^3.6.0",
     "tailwind-merge": "^3.3.0",
     "three": "^0.181.1",
     "threejs-meshline": "^2.0.12"
