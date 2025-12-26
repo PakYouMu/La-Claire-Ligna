@@ -8,7 +8,7 @@ export default function DashboardLayout({
       {/* NavOverlay removed. Just handle spacing. */}
       
       {/* Content Area - Maintain padding to account for fixed Nav */}
-      <div className="relative w-full h-full pt-16 md:pt-32">
+      <div className="relative w-full h-full pt-16 md:pt-24">
         {children}
       </div>
     </div>

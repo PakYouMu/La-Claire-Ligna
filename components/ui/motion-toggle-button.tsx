@@ -15,7 +15,7 @@ export function MotionToggleButton({ className }: { className?: string }) {
       {reduceMotion ? (
         <ZapOff className="nav-action-icon" />
       ) : (
-        <Zap className="nav-action-icon text-yellow-500" />
+        <Zap className="nav-action-icon" />
       )}
     </button>
   );

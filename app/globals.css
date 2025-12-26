@@ -286,64 +286,83 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem; /* py-4 px-5 */
+  padding: 1rem 1.5rem;
   pointer-events: none;
 }
 
 @media (min-width: 768px) {
   .nav-overlay-container {
-    padding: 2rem 2rem; /* md:py-8 md:px-8 */
+    padding: 1.5rem 2.5rem;
   }
 }
 
-/* --- LOGO SETTINGS --- */
+/* === LOGO === */
 .nav-logo-link {
   display: block;
   pointer-events: auto;
   z-index: 50;
-  font-family: var(--font-display), serif; 
+  font-family: var(--font-display), serif;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: 0.05em;
-  margin-left: 0.5rem; 
+  letter-spacing: -0.025em;
+  transition: opacity 0.2s ease;
+}
+
+.nav-logo-link:hover {
+  opacity: 0.8;
 }
 
 .nav-logo-sheen {
-  padding-left: 0.1rem !important; 
-  padding-right: 1rem !important; 
+  padding-left: 0.1rem !important;
+  padding-right: 1rem !important;
 }
 
 .nav-logo-text {
-  font-size: clamp(1.5rem, 5vw, 4rem);
-  line-height: 1.25;
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  line-height: 1.2;
   font-weight: 700;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
 
-/* --- BURGER BUTTON --- */
+/* === BURGER BUTTON === */
 .nav-burger-container {
   pointer-events: auto;
   z-index: 50;
 }
 
 .nav-burger-btn {
-  padding: 0.5rem;
-  border-radius: calc(var(--radius) - 2px);
-  border-width: 1px;
-  border-color: transparent;
-  backdrop-filter: blur(4px);
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.3);
+  background-color: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(8px);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .nav-burger-btn:hover {
-  background-color: hsl(var(--muted) / 0.2);
-  border-color: hsl(var(--border));
+  background-color: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--border) / 0.6);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 }
 
-/* --- MOBILE MENU OVERLAY --- */
+.nav-burger-btn:active {
+  transform: scale(0.95);
+}
+
+/* === MOBILE OVERLAY === */
 @keyframes nav-overlay-enter {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .nav-mobile-overlay {
@@ -353,96 +372,298 @@
   display: flex;
   flex-direction: column;
   pointer-events: auto;
-  background-color: hsl(var(--background) / 0.95);
-  backdrop-filter: blur(24px);
-  animation: nav-overlay-enter 0.2s ease-out forwards;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--background) / 0.98),
+    hsl(var(--background) / 0.95)
+  );
+  backdrop-filter: blur(32px);
+  animation: nav-overlay-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.nav-preference-label {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  color: hsl(var(--muted-foreground));
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  text-align: center;
-  margin-bottom: 0.5rem;
-}
-
-.nav-preference-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  border-radius: 1rem;
-  background-color: hsl(var(--muted) / 0.4);
-  border: 1px solid hsl(var(--border) / 0.5);
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-  user-select: none;
-}
-
-.nav-preference-row:hover {
-  background-color: hsl(var(--muted) / 0.6);
-  border-color: hsl(var(--border));
-}
-
-.nav-preference-row:active {
-  background-color: hsl(var(--muted) / 0.8);
-}
-
-/* --- NEW: SETTINGS BUTTONS (Pure CSS) --- */
-.nav-action-btn {
-  background-color: transparent;
-  border: none;
-  padding: 0.5rem; /* p-2 equivalent */
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.375rem; /* rounded-md */
-  transition: background-color 0.2s ease;
-  color: hsl(var(--muted-foreground));
-}
-
-.nav-action-btn:hover {
-  background-color: hsl(var(--muted));
-  color: hsl(var(--foreground));
-}
-
-.nav-action-icon {
-  width: 1rem;  /* 16px */
-  height: 1rem; /* 16px */
-}
-
-/* === NAVIGATION LINKS (New) === */
-.nav-section-title {
-  @apply text-sm font-medium text-muted-foreground uppercase tracking-widest text-center mb-4 mt-2;
-  font-size: 0.75rem; /* smaller than preference label */
-}
-
+/* === NAVIGATION LINKS === */
 .nav-link-item {
   display: block;
   width: 100%;
   text-align: center;
-  padding: 0.75rem;
-  font-size: 1.25rem; /* text-xl */
+  padding: 0.875rem 1rem;
+  font-size: 1.125rem;
   font-weight: 500;
   color: hsl(var(--foreground));
-  border-radius: 0.5rem;
-  transition: background-color 0.2s, color 0.2s;
-  /* Font Display for flavor */
-  font-family: var(--font-display), serif; 
-  letter-spacing: -0.02em;
+  border-radius: 0.75rem;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-geist-sans), sans-serif;
+  letter-spacing: -0.01em;
+  border: 1px solid transparent;
 }
 
 .nav-link-item:hover {
   background-color: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--border) / 0.3);
+  transform: scale(1.02);
 }
 
+.nav-link-item:active {
+  background-color: hsl(var(--muted) / 0.7);
+}
+
+/* === SEPARATOR === */
 .nav-separator {
-  width: 20%;
+  width: 100%;
   height: 1px;
-  background-color: hsl(var(--border));
-  margin: 1.5rem auto;
+  background: linear-gradient(
+    to right,
+    transparent,
+    hsl(var(--border) / 0.5) 50%,
+    transparent
+  );
+  margin: 0 auto;
+}
+
+/* === PREFERENCES === */
+/* RESTORED: This class controls the title spacing/look */
+.nav-preference-label-center {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground) / 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.nav-preference-row-thin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem; 
+  border-radius: 0.75rem;
+  background-color: hsl(var(--muted) / 0.3);
+  border: 1px solid hsl(var(--border) / 0.4);
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.nav-preference-row-thin:hover {
+  background-color: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--border) / 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.nav-preference-row-thin:active {
+  background-color: hsl(var(--muted) / 0.7);
+  transform: scale(0.98);
+}
+
+.nav-preference-row-thin span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+/* === ACTION BUTTONS === */
+.nav-action-btn {
+  background-color: transparent;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  color: hsl(var(--muted-foreground));
+}
+
+.nav-action-btn:hover {
+  color: hsl(var(--foreground));
+}
+
+.nav-action-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* === AUTH BUTTONS === */
+.nav-auth-wrapper {
+  width: 100%;
+}
+
+.nav-auth-wrapper > div {
+  width: 100%;
+  display: flex;
+  gap: 0.75rem;
+  flex-direction: row;
+}
+
+.nav-auth-wrapper button,
+.nav-auth-wrapper a {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 2.25rem; 
+  padding: 0 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: 0.75rem;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid hsl(var(--border) / 0.4);
+}
+
+.nav-auth-wrapper button:hover,
+.nav-auth-wrapper a:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.nav-auth-wrapper button:active,
+.nav-auth-wrapper a:active {
+  transform: translateY(0);
+}
+
+/* === ANIMATIONS === */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-from-bottom-4 {
+  from { transform: translateY(1rem); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-in { animation-fill-mode: both; }
+.fade-in { animation-name: fade-in; }
+.slide-in-from-bottom-4 { animation-name: slide-in-from-bottom-4; }
+.duration-500 { animation-duration: 500ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+
+/* ========================================================== */
+/* === NAVIGATION OVERLAY STRUCTURE (PURE CSS) === */
+/* ========================================================== */
+
+/* Layer 1: The Centered Content (Nav Items) */
+.nav-layer-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;    
+  justify-content: center;
+  pointer-events: none;   
+  z-index: 0;
+  padding-bottom: 5vh; 
+}
+
+/* Layer 2: The Flow Content (Preferences + Footer) */
+.nav-layer-flow {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+  overflow-y: auto;
+}
+
+/* Common Width Wrapper (replaces w-full max-w-sm px-6) */
+.nav-content-width {
+  width: 100%;
+  max-width: 24rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  pointer-events: auto;
+}
+
+/* Nav Links Wrapper (The Home/About buttons container) */
+.nav-links-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* gap-2 */
+  width: 100%;
+}
+
+/* Preferences Section */
+.nav-preferences-container {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  margin-top: 2rem;
+  pointer-events: auto;
+}
+
+.nav-preferences-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0.75rem; /* gap-3 */
+}
+
+/* The specific half-width button style */
+.nav-btn-half {
+  width: 50%; /* Retains the width of the previous side-by-side layout */
+}
+
+/* Footer Section */
+.nav-footer-container {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 1.5rem;
+  border-top: 1px solid hsl(var(--border) / 0.3);
+  background-color: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.nav-footer-content {
+  width: 100%;
+  max-width: 24rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.nav-copyright {
+  font-size: 0.75rem;
+  text-align: center;
+  color: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* Spacer for Flow Layer */
+.nav-spacer-top { height: 6rem; flex-shrink: 0; } /* h-24 */
+.nav-spacer-fill { flex: 1; }
+
+/* This class is added conditionally via React when closing */
+.nav-mobile-overlay.closing {
+  animation: nav-overlay-exit 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none; /* Prevent interactions during exit */
+}
+
+@keyframes nav-overlay-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }

@@ -6,7 +6,8 @@ import { ThemeProvider } from "next-themes";
 import { MotionProvider } from "@/components/context/motion-context";
 import MousePositionProvider from "@/components/wrappers/mouse-position-wrapper";
 import { GlobalNav } from "@/components/wrappers/nav-wrapper";
-import { AuthButton } from "@/components/auth/auth-button"; // Server Component
+import { AuthProvider } from "@/components/wrappers/auth-wrapper";
+
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -46,20 +47,16 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {/* 
-                  GLOBAL NAVIGATION WRAPPER 
-                  This ensures Nav persists across all pages.
-                  We pass AuthButton (Server Component) as a prop to the Client Component.
-              */}
-              <div className="relative min-h-screen flex flex-col">
-                <GlobalNav authButton={<AuthButton />} />
-                
-                {/* Main Content */}
-                <main className="flex-1 w-full h-full">
-                  {children}
-                </main>
-              </div>
-
+                <AuthProvider>
+                  <div className="relative min-h-screen flex flex-col">
+                    <GlobalNav/>
+                    
+                    {/* Main Content */}
+                    <main className="flex-1 w-full h-full">
+                      {children}
+                    </main>
+                  </div>
+                </AuthProvider>
             </ThemeProvider>
           </MousePositionProvider>
         </MotionProvider>
