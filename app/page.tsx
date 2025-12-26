@@ -1,4 +1,3 @@
-import TutorialOverlay from "@/components/tutorial/tutorial-overlay";
 import MotionToggleWrapper from "@/components/wrappers/motion-toggle-wrapper";
 import MetallicSheen from "@/components/wrappers/metallic-sheen-wrapper";
 
@@ -18,8 +17,6 @@ export default function Home() {
           </MetallicSheen>
         </div>
       </MotionToggleWrapper>
-
-      <TutorialOverlay />
     </div>
   );
 }
