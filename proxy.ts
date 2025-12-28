@@ -1,35 +1,42 @@
-// root/middleware.ts
+// root/proxy.ts
 import { updateSession } from "@/lib/supabase/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
   // 1. Run the Supabase session update
-  // We destructure the user and the response directly
   const { supabaseResponse, user } = await updateSession(request);
 
   // 2. Define protected routes
-  const protectedRoutes = ["/dashboard", "/loans", "/borrowers", "/settings", "/settings/profile"];
+  // Note: /base is protected, but we handle the root logic separately below
+  const protectedRoutes = [
+    "/base", 
+    "/dashboard", 
+    "/loans", 
+    "/borrowers", 
+    "/settings"
+  ];
+
+  const path = request.nextUrl.pathname;
 
   // 3. Check if the current path is a protected route
   const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+    path.startsWith(route)
   );
 
-  // 4. Handle Auth Logic
+  // 4. Handle Auth Logic: Protect Routes
   if (isProtectedRoute && !user) {
-    // If accessing a protected route without a user, redirect to login
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("redirectedFrom", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // OPTIONAL: Redirect logged-in users away from login page
-  const isAuthPage = request.nextUrl.pathname.startsWith("/auth/login");
-  if (isAuthPage && user) {
-     return NextResponse.redirect(new URL("/dashboard", request.url));
+  // 5. Handle "Hub" Logic: Redirect Logged-In Users
+  // If user is logged in and tries to visit Landing or Login, send them to Fund Selection
+  if (user && (path === "/" || path.startsWith("/auth/login") || path === "/login")) {
+    return NextResponse.redirect(new URL("/base", request.url));
   }
 
-  // 5. Return the Supabase response (important for refreshing cookies)
+  // 6. Return the Supabase response (Crucial for refreshing cookies)
   return supabaseResponse;
 }
 

@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { MotionProvider } from "@/components/context/motion-context";
-import MousePositionProvider from "@/components/wrappers/mouse-position-wrapper";
 import { GlobalNav } from "@/components/wrappers/nav-wrapper";
 import { AuthProvider } from "@/components/wrappers/auth-wrapper";
+import { ScreenGuard } from "@/components/wrappers/screen-wrapper";
+import { MotionProvider } from "@/components/context/motion-context";
+import MousePositionProvider from "@/components/wrappers/mouse-position-wrapper";
 
 
 const defaultUrl = process.env.VERCEL_URL
@@ -59,6 +60,7 @@ export default function RootLayout({
                 </AuthProvider>
             </ThemeProvider>
           </MousePositionProvider>
+          <ScreenGuard /> 
         </MotionProvider>
       </body>
     </html>

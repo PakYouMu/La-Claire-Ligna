@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ThemeSwitcher } from "@/components/wrappers/theme-switcher-wrapper";
 import MetallicSheen from "@/components/wrappers/metallic-sheen-wrapper";
 import { MotionToggleButton } from "@/components/ui/motion-toggle-button"; 
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutGrid } from "lucide-react"; // Added LayoutGrid icon
 import { useTheme } from "next-themes";
 import { useMotion } from "@/components/context/motion-context";
 import { useAuth } from "@/components/wrappers/auth-wrapper";
@@ -22,7 +22,6 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
   const { user, isLoading, signOut } = useAuth();
   
   const pathname = usePathname(); 
-  // CHANGED: Destructure resolvedTheme to know the ACTUAL look (System Dark vs Real Dark)
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { toggleMotion } = useMotion();
 
@@ -72,11 +71,7 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
   };
 
   const handleThemeRowClick = (e: React.MouseEvent) => {
-    // Prevent triggering if clicking the button directly (redundant with stopPropagation below, but good safety)
     if ((e.target as HTMLElement).closest('.nav-action-btn')) return;
-    
-    // CHANGED: Toggle based on what the user SEES (resolvedTheme), not just the setting string.
-    // This ensures if you are on "System (Dark)", clicking the row toggles to "Light".
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
@@ -100,7 +95,7 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
     if (user) {
       return (
         <div className="w-full space-y-3">
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-muted-foreground" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
             Welcome back, <span className="font-bold text-foreground">
               {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
             </span>
@@ -183,16 +178,10 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
               <div className="nav-content-width space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                 <div className="nav-preference-label-center">Preferences</div>
                 <div className="nav-preferences-grid">
-                  
+
                   {/* APPEARANCE ROW */}
                   <div className="nav-preference-row-thin nav-btn-half" onClick={handleThemeRowClick}>
                     <span className="font-medium text-sm">Appearance</span>
-                    
-                    {/* 
-                        CHANGED: Added onClick={e => e.stopPropagation()} 
-                        This prevents clicks inside the dropdown (like selecting "System")
-                        from bubbling up and triggering handleThemeRowClick.
-                    */}
                     <div 
                       className="scale-90 transition-transform hover:scale-95"
                       onClick={(e) => e.stopPropagation()}
@@ -204,8 +193,6 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
                   {/* ANIMATIONS ROW */}
                   <div className="nav-preference-row-thin nav-btn-half" onClick={toggleMotion}>
                     <span className="font-medium text-sm">Animations</span>
-                    
-                    {/* Added stopPropagation here too for consistency */}
                     <div 
                       className="scale-90 transition-transform hover:scale-95"
                       onClick={(e) => e.stopPropagation()}

@@ -2,19 +2,37 @@ import { getUserRole } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardGrid } from "@/components/dashboard/dashboard-grid";
+import { getFundBySlug } from "@/app/actions/funds";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const fund  = await getFundBySlug(slug);
   const role = await getUserRole();
+
   if (!role) redirect("/auth/login");
 
   const supabase = await createClient();
 
   // 1. Fetch Core Views
   const [walletRes, loansRes, scheduleRes, ledgerRes] = await Promise.all([
-    supabase.from("view_wallet_balance").select("cash_on_hand").single(),
-    supabase.from("view_loan_summary").select("*"),
-    supabase.from("payment_schedule").select("*"),
-    supabase.from("ledger").select("*").order("transaction_date", { ascending: true })
+    supabase.from("view_wallet_balance")
+    .select("cash_on_hand")
+    .eq("fund_id", fund)
+    .single(),
+    supabase.from("view_loan_summary")
+    .select("*")
+    .eq("fund_id", fund),
+    supabase.from("payment_schedule")
+    .select("*, loans!inner(fund_id)")
+    .eq("loans.fund_id", fund),
+    supabase.from("ledger")
+    .select("*")
+    .eq("fund_id", fund)
+    .order("transaction_date", { ascending: true })
   ]);
 
   const cashOnHand = walletRes.data?.cash_on_hand || 0;

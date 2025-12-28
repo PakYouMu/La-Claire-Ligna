@@ -3,8 +3,13 @@ import { redirect } from "next/navigation";
 import { ActiveLoansTable } from "@/components/dashboard/active-loans-table"
 import { LoansBentoWrapper } from "@/components/loans/loans-grid";
 
-export default async function LoansPage() {
+interface PageProps {
+  params: { fundId: string };
+}
+
+export default async function LoansPage({params} : PageProps) {
   const supabase = await createClient();
+  const { fundId } = params;
 
   const {
     data: { user },
@@ -15,19 +20,10 @@ export default async function LoansPage() {
   }
 
   return (
-    // 1. The Top Spacer
-    // This pushes the content down below the Nav Overlay.
-    // We match the Dashboard's "pt-16 md:pt-[123px]" exactly.
     <div className="w-full pt-16 md:pt-[123px]">
-      
-      {/* 2. The Bento Wrapper
-          This adds the standard p-responsive margins 
-          so it aligns vertically with Dashboard widgets. 
-      */}
       <LoansBentoWrapper>
-        <ActiveLoansTable />
-      </LoansBentoWrapper>
-      
+        <ActiveLoansTable fundId={fundId}/>
+      </LoansBentoWrapper>  
     </div>
   );
 }

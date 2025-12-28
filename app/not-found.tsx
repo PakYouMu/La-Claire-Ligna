@@ -30,7 +30,7 @@ export default function NotFound() {
           {/* Return Button */}
           <div className="pt-4">
             <Link
-              href="/dashboard"
+              href="/base"
               className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-md border border-input bg-background px-8 font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground"
             >
               <span className="mr-2 group-hover:-translate-x-1 transition-transform duration-300">

@@ -13,14 +13,19 @@ import { SignaturePreview } from "./modals/signature-modal";
 import { LoanSummary } from "@/lib/types/schema"; 
 import { CalendarClock } from "lucide-react";
 
-export async function ActiveLoansTable() {
+interface ActiveLoansTableProps {
+  fundId: string;
+}
+
+export async function ActiveLoansTable({fundId}: ActiveLoansTableProps) {
   const supabase = await createClient();
   
   // 1. Fetch Loans
   const { data: loans, error } = await supabase
     .from("view_loan_summary")
     .select("*")
-    .eq("status", "ACTIVE") 
+    .eq("status", "ACTIVE")
+    .eq("fund_id", fundId)
     .order("start_date", { ascending: false });
 
   if (error || !loans) {

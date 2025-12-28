@@ -15,15 +15,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
+import { useParams } from "next/navigation";
 
 export function AddCapitalDialog() {
+  const params = useParams();
+  const fundId = params.fundId as string;
+  
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Helper: Get current local date-time in format "YYYY-MM-DDTHH:MM" for the input default
   const getCurrentDateTime = () => {
     const now = new Date();
-    // Adjust for timezone offset to ensure the input shows local time correctly
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   };
@@ -38,7 +40,6 @@ export function AddCapitalDialog() {
       await addCapital(formData);
       setOpen(false);
     } catch (error) {
-      // In a real app, use toast() here
       alert("Failed to add capital");
     } finally {
       setIsLoading(false);
@@ -57,12 +58,13 @@ export function AddCapitalDialog() {
         <DialogHeader>
           <DialogTitle>Add Capital</DialogTitle>
           <DialogDescription>
-            Inject money into your system wallet.
+            Inject money into this fund's wallet.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4 py-4">
           
-          {/* Amount Field */}
+          <input type="hidden" name="fund_id" value={fundId} />
+
           <div className="grid gap-2">
             <Label htmlFor="amount">Amount</Label>
             <Input
@@ -75,20 +77,18 @@ export function AddCapitalDialog() {
             />
           </div>
 
-          {/* NEW: Date & Time Field */}
           <div className="grid gap-2">
             <Label htmlFor="date">Date & Time</Label>
             <Input
               id="date"
               name="date"
               type="datetime-local" 
-              defaultValue={getCurrentDateTime()} // Defaults to Right Now
+              defaultValue={getCurrentDateTime()} 
               required
               className="block" 
             />
           </div>
 
-          {/* Notes Field */}
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes (Optional)</Label>
             <Input
