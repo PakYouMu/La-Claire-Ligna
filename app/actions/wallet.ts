@@ -15,7 +15,7 @@ export async function getWalletBalance(): Promise<number> {
   return data?.cash_on_hand || 0;
 }
 
-// --- NEW FUNCTION ---
+// Keep existing getLoanStats...
 export async function getLoanStats() {
   const supabase = await createClient();
 
@@ -42,18 +42,27 @@ export async function getLoanStats() {
   };
 }
 
-// Keep existing addCapital...
 export async function addCapital(formData: FormData) {
   const supabase = await createClient();
   const amount = parseFloat(formData.get("amount") as string);
   const notes = formData.get("notes") as string;
+  // 1. Extract the date string from the form
+  const dateStr = formData.get("date") as string; 
 
   if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
+
+  // 2. Format the date for Supabase (Timestamptz)
+  // If the user picked a date, convert it. If not (shouldn't happen due to required), default to now.
+  const transactionDate = dateStr 
+    ? new Date(dateStr).toISOString() 
+    : new Date().toISOString();
 
   const { error } = await supabase.from("ledger").insert({
     amount: amount,
     category: "CAPITAL_DEPOSIT",
     notes: notes || "Manual Capital Deposit",
+    // 3. Save the custom date
+    transaction_date: transactionDate, 
   });
 
   if (error) throw new Error(error.message);

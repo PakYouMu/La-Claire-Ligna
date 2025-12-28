@@ -57,7 +57,7 @@ export interface LedgerEntry {
   category: TransactionCategory;
   notes?: string;
   created_at: string;
-  // Optional links (if you fetch them)
+  transaction_date?: string; 
   loan_id?: string;
   payment_id?: string;
 }

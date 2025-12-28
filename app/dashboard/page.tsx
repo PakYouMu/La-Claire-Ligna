@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     supabase.from("view_wallet_balance").select("cash_on_hand").single(),
     supabase.from("view_loan_summary").select("*"),
     supabase.from("payment_schedule").select("*"),
-    supabase.from("ledger").select("*").order("created_at", { ascending: true })
+    supabase.from("ledger").select("*").order("transaction_date", { ascending: true })
   ]);
 
   const cashOnHand = walletRes.data?.cash_on_hand || 0;
@@ -40,13 +40,7 @@ export default async function DashboardPage() {
 
   const isUnpaid = (status: string) => status === 'PENDING' || status === 'OVERDUE';
 
-  // Today's Due: Explicit String Compare
-  const todaysDue = schedules
-    .filter(s => {
-      // s.due_date is YYYY-MM-DD from DB
-      return s.due_date === todayStr && isUnpaid(s.status || '');
-    })
-    .reduce((sum, s) => sum + s.expected_amount, 0);
+  const collectibles = activeLoans.reduce((sum, loan) => sum + loan.amortization_per_payday, 0);
 
   // Calculate Days Late for each schedule to detect Bad Debt/PAR
   const overdueSchedules = schedules.filter(s => isUnpaid(s.status || '') && s.due_date < todayStr);
@@ -96,13 +90,21 @@ export default async function DashboardPage() {
   });
 
   const cashFlowData = last30Days.map(date => {
-    // String match instead of Date objects
-    const dayTransactions = ledger.filter(t => t.created_at.startsWith(date));
+    const dayTransactions = ledger.filter(t => {
+      const targetDate = t.transaction_date || t.created_at; 
+      return targetDate && targetDate.startsWith(date);
+    });
+
     return {
+      // Format the label for the chart (e.g., "Nov 28")
       date: new Date(date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
+      
+      // IN: Collections + Capital Deposits
       in: dayTransactions
         .filter(t => t.category === 'LOAN_REPAYMENT' || t.category === 'CAPITAL_DEPOSIT')
         .reduce((sum, t) => sum + Number(t.amount), 0),
+      
+      // OUT: Disbursements (Converted to positive number for the chart height)
       out: Math.abs(dayTransactions
         .filter(t => t.category === 'LOAN_DISBURSEMENT')
         .reduce((sum, t) => sum + Number(t.amount), 0))
@@ -158,7 +160,7 @@ export default async function DashboardPage() {
           totalEquity,
           netProfit,
           activeBorrowers: activeLoans.length,
-          todaysDue,
+          collectibles,
           collectionRate,
           parMetric,
           totalBadDebt
@@ -172,17 +174,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-
-// export default function DashboardLayout({
-//   children,
-// }: {
-//   children: React.ReactNode;
-// }) {
-//   return (
-//     <div className="h-screen w-full relative bg-background">
-//       <div className="relative w-full h-full pt-16 md:pt-24">
-//         {children}
-//       </div>
-//     </div>
-//   );
-// }

@@ -19,7 +19,7 @@ interface DashboardGridProps {
     totalEquity: number;
     netProfit: number;
     activeBorrowers: number;
-    todaysDue: number;
+    collectibles: number;
     collectionRate: number;
     parMetric: number;
     totalBadDebt: number;
@@ -100,10 +100,10 @@ export function DashboardGrid({ stats, charts }: DashboardGridProps) {
           </div>
         </BentoCard>
 
-        <BentoCard className="col-span-1" title="Due Today" icon={<Target className="h-4 w-4"/>}>
+        <BentoCard className="col-span-1" title="Collectibles" icon={<Target className="h-4 w-4"/>}>
           <div className="mt-2">
-            <div className="text-responsive-2xl font-bold text-orange-500">{formatPHP.format(stats.todaysDue)}</div>
-            <p className="text-responsive-xs text-muted-foreground mt-1">Daily Target</p>
+            <div className="text-responsive-2xl font-bold text-orange-500">{formatPHP.format(stats.collectibles)}</div>
+            <p className="text-responsive-xs text-muted-foreground mt-1">Total Amount Due</p>
           </div>
         </BentoCard>
 
