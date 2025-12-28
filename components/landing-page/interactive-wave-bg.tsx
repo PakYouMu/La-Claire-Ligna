@@ -10,11 +10,9 @@ import {
   Vector2,
   Clock,
   AdditiveBlending,
-  NormalBlending, // Needed for Light Mode
+  NormalBlending,
   Color
 } from 'three';
-
-// --- SHADER DEFINITIONS ---
 
 const vertexShader = `
 precision highp float;
@@ -144,8 +142,6 @@ void main() {
 }
 `;
 
-// --- PROPS & TYPES ---
-
 interface HelixCanvasProps {
   heroColor?: string;
   backgroundColor?: string;
@@ -153,7 +149,7 @@ interface HelixCanvasProps {
   mouseDamping?: number;
   mixBlendMode?: React.CSSProperties['mixBlendMode'];
   opacity?: number;
-  darkMode?: boolean; // <--- This was missing in your file
+  darkMode?: boolean;
 }
 
 function colorToVec3(colorString: string): Vector3 {
@@ -182,7 +178,6 @@ export default function HelixCanvas({
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
     camera.position.z = 1;
 
-    // Alpha: true is crucial for Light Mode transparency
     const renderer = new WebGLRenderer({ 
       antialias: true, 
       alpha: true 
@@ -207,7 +202,6 @@ export default function HelixCanvas({
       uniforms,
       vertexShader,
       fragmentShader,
-      // Logic: If Dark Mode -> Additive (Glowing). If Light Mode -> Normal (Ink-like)
       blending: darkMode ? AdditiveBlending : NormalBlending,
       depthTest: false,
       transparent: true

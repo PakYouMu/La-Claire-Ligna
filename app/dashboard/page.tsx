@@ -34,8 +34,6 @@ export default async function DashboardPage() {
 
   // 3. Calculate Operational Stats (Timezone Agnostic Logic)
   
-  // Get Today as simple YYYY-MM-DD string to match DB standard
-  // We use the server's local date which is sufficient for this context
   const todayStr = new Date().toISOString().split('T')[0];
   const nowTs = Date.now();
   const ONE_DAY_MS = 1000 * 60 * 60 * 24;
@@ -152,23 +150,39 @@ export default async function DashboardPage() {
   ].filter(c => c.value > 0);
 
   return (
-    <DashboardGrid
-      stats={{
-        cashOnHand,
-        totalReceivables,
-        totalEquity,
-        netProfit,
-        activeBorrowers: activeLoans.length,
-        todaysDue,
-        collectionRate,
-        parMetric,
-        totalBadDebt
-      }}
-      charts={{
-        cashFlow: cashFlowData,
-        aging: agingData,
-        channels: channelData
-      }}
-    />
+    <div className="relative w-full h-full pt-16 md:pt-[123px]">
+      <DashboardGrid
+        stats={{
+          cashOnHand,
+          totalReceivables,
+          totalEquity,
+          netProfit,
+          activeBorrowers: activeLoans.length,
+          todaysDue,
+          collectionRate,
+          parMetric,
+          totalBadDebt
+        }}
+        charts={{
+          cashFlow: cashFlowData,
+          aging: agingData,
+          channels: channelData
+        }}
+      />
+    </div>
   );
 }
+
+// export default function DashboardLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <div className="h-screen w-full relative bg-background">
+//       <div className="relative w-full h-full pt-16 md:pt-24">
+//         {children}
+//       </div>
+//     </div>
+//   );
+// }

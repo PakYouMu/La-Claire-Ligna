@@ -12,7 +12,6 @@ export default function MotionToggleWrapper({ children }: { children: React.Reac
 
   useEffect(() => setMounted(true), []);
 
-  // ... Keep your forwardPointerEvent logic exactly as is ...
   const forwardPointerEvent = (e: React.PointerEvent) => {
     const canvas = document.querySelector('canvas');
     if (!canvas) return;
@@ -31,7 +30,7 @@ export default function MotionToggleWrapper({ children }: { children: React.Reac
       {/* Background Layer */}
       <div className="absolute inset-0 z-0">
         <HelixCanvas 
-          speed={reduceMotion ? 0.0 : 1.0} // Use global state
+          speed={reduceMotion ? 0.02 : 1.0}
           mouseDamping={0.5}
           darkMode={isDark}
           heroColor={isDark ? "#ffffff" : "#000000"} 
