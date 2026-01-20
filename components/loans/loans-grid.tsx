@@ -14,8 +14,10 @@ export function LoansBentoWrapper({ children }: { children: React.ReactNode }) {
       <MagicBento
         disableAnimations={reduceMotion}
         enableSpotlight={true}
-        enableStars={false} // Cleaner for a data table
+        enableStars={true}
         spotlightRadius={300}
+        tiltIntensity={0.5}
+        magnetStrength={0.02}
         className="gap-responsive"
       >
         {/* 

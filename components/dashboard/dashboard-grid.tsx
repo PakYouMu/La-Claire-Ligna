@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 
 interface DashboardGridProps {
+  fundId: string;
   stats: {
     cashOnHand: number;
     totalReceivables: number;
@@ -47,7 +48,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function DashboardGrid({ stats, charts }: DashboardGridProps) {
+export function DashboardGrid({ fundId, stats, charts }: DashboardGridProps) {
   const { reduceMotion } = useMotion(); 
   const formatPHP = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
   const formatPct = new Intl.NumberFormat("en-PH", { style: "percent", maximumFractionDigits: 1 });
@@ -57,8 +58,8 @@ export function DashboardGrid({ stats, charts }: DashboardGridProps) {
       <MagicBento 
         disableAnimations={reduceMotion}
         enableSpotlight={true}
-        enableStars={false}
         spotlightRadius={300}
+        enableStars={true}
         className="gap-responsive" 
       >
         {/* ROW 1: Financials */}
@@ -66,7 +67,7 @@ export function DashboardGrid({ stats, charts }: DashboardGridProps) {
           <div className="mt-2">
             <div className="text-responsive-xl font-bold">{formatPHP.format(stats.cashOnHand)}</div>
             <div className="mt-3 relative z-20"> 
-              <AddCapitalDialog />
+               <AddCapitalDialog fundId={fundId} />
             </div>
           </div>
         </BentoCard>

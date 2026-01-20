@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -15,15 +14,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
-import { useParams } from "next/navigation";
 
-export function AddCapitalDialog() {
-  const params = useParams();
-  const fundId = params.fundId as string;
-  
+// Add props interface
+interface AddCapitalDialogProps {
+  fundId: string;
+}
+
+export function AddCapitalDialog({ fundId }: AddCapitalDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ... getCurrentDateTime helper ...
   const getCurrentDateTime = () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -57,45 +58,25 @@ export function AddCapitalDialog() {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add Capital</DialogTitle>
-          <DialogDescription>
-            Inject money into this fund's wallet.
-          </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4 py-4">
           
+          {/* PASS THE PROP VALUE, NOT URL PARAMS */}
           <input type="hidden" name="fund_id" value={fundId} />
 
           <div className="grid gap-2">
             <Label htmlFor="amount">Amount</Label>
-            <Input
-              id="amount"
-              name="amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              required
-            />
+            <Input id="amount" name="amount" type="number" step="0.01" required />
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="date">Date & Time</Label>
-            <Input
-              id="date"
-              name="date"
-              type="datetime-local" 
-              defaultValue={getCurrentDateTime()} 
-              required
-              className="block" 
-            />
+            <Input id="date" name="date" type="datetime-local" defaultValue={getCurrentDateTime()} required />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Input
-              id="notes"
-              name="notes"
-              placeholder="e.g. Initial Investment"
-            />
+            <Label htmlFor="notes">Notes</Label>
+            <Input id="notes" name="notes" placeholder="Optional" />
           </div>
 
           <DialogFooter>

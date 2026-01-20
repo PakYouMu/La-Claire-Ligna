@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Camera } from "lucide-react";
 
 interface ManualLoanFormProps {
+  fundId: string; // <--- ADDED PROP
   onSuccess: () => void;
   onCancel: () => void;
   onSwitchToScan: () => void;
 }
 
-export function ManualLoanForm({ onSuccess, onCancel, onSwitchToScan }: ManualLoanFormProps) {
+export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: ManualLoanFormProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null);
   const [formData, setFormData] = useState({
@@ -28,6 +29,9 @@ export function ManualLoanForm({ onSuccess, onCancel, onSwitchToScan }: ManualLo
     setIsProcessing(true);
 
     const payload = new FormData();
+    // 1. Append Fund ID
+    payload.append("fund_id", fundId); 
+    
     payload.append("name", formData.name);
     payload.append("amount", formData.amount);
     payload.append("months", formData.months);

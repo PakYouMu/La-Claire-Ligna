@@ -12,11 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload } from "lucide-react";
 
 interface ScanLoanFormProps {
+  fundId: string; // <--- ADDED PROP
   onSuccess: () => void;
   onSwitchToManual: () => void;
 }
 
-export function ScanLoanForm({ onSuccess, onSwitchToManual }: ScanLoanFormProps) {
+export function ScanLoanForm({ fundId, onSuccess, onSwitchToManual }: ScanLoanFormProps) {
   const [step, setStep] = useState<'upload' | 'crop' | 'review'>('upload');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -94,6 +95,9 @@ export function ScanLoanForm({ onSuccess, onSwitchToManual }: ScanLoanFormProps)
     setIsProcessing(true);
 
     const payload = new FormData();
+    // 1. Append Fund ID
+    payload.append("fund_id", fundId);
+
     payload.append("name", formData.name);
     payload.append("amount", formData.amount);
     payload.append("months", formData.months);

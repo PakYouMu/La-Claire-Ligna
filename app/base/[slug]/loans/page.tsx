@@ -1,29 +1,36 @@
+import { getFundBySlug } from "@/app/actions/funds";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { ActiveLoansTable } from "@/components/dashboard/active-loans-table"
 import { LoansBentoWrapper } from "@/components/loans/loans-grid";
+import { ActiveLoansTable } from "@/components/dashboard/active-loans-table"
 
 interface PageProps {
-  params: { fundId: string };
+  params: Promise<{ slug: string }>; // <--- CHANGED: We expect 'slug', not 'fundId'
 }
 
-export default async function LoansPage({params} : PageProps) {
+export default async function LoansPage({ params }: PageProps) {
+  // 1. Await params (Next.js 15+ requirement)
+  const { slug } = await params;
+
+  // 2. Auth Check
   const supabase = await createClient();
-  const { fundId } = params;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 3. Resolve Slug -> Fund ID
+  // We need the ID because the database tables use UUIDs, not slugs
+  const fund = await getFundBySlug(slug);
 
-  if (!user) {
-    redirect("/auth/login");
+  if (!fund) {
+    return notFound(); // Show 404 if slug is invalid (e.g. /base/potato/loans)
   }
 
   return (
     <div className="w-full pt-16 md:pt-[123px]">
       <LoansBentoWrapper>
-        <ActiveLoansTable fundId={fundId}/>
-      </LoansBentoWrapper>  
+        {/* 4. Pass the RESOLVED UUID to the table */}
+        <ActiveLoansTable fundId={fund.id} />
+      </LoansBentoWrapper>
     </div>
   );
 }

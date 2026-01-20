@@ -1,16 +1,20 @@
 "use client";
 
+import { useState } from "react"; // Add useState
 import { useRouter } from "next/navigation";
 import MagicBento, { BentoCard } from "@/components/ui/magic-bento";
 import { useMotion } from "@/components/context/motion-context";
-import { Wallet, Plus, ShieldCheck, User } from "lucide-react";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Wallet, Plus, ShieldCheck, User, Loader2 } from "lucide-react"; // Add Loader2
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"; // Add DialogFooter
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // Add Input
+import { Label } from "@/components/ui/label"; // Add Label
+import { createFund } from "@/app/actions/funds"; // Import the action
 
 interface Fund {
   id: string;
   name: string;
-  slug: string; // <--- ADDED THIS
+  slug: string;
   currency: string;
   role: { role: string } | { role: string }[] | null;
 }
@@ -18,6 +22,7 @@ interface Fund {
 export function FundGrid({ funds }: { funds: Fund[] }) {
   const router = useRouter();
   const { reduceMotion } = useMotion();
+  const [isCreating, setIsCreating] = useState(false); // Loading state
 
   const handleEnterFund = (fundSlug: string) => {
     router.push(`/base/${fundSlug}/dashboard`);
@@ -28,11 +33,28 @@ export function FundGrid({ funds }: { funds: Fund[] }) {
     return fund.role?.role || 'viewer';
   };
 
+  // Form Submission Handler
+  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsCreating(true);
+    
+    const formData = new FormData(event.currentTarget);
+    
+    try {
+      // The server action will handle the redirect on success
+      await createFund(formData);
+    } catch (error: any) {
+      alert(error.message);
+      setIsCreating(false);
+    }
+  }
+
   return (
     <MagicBento
       disableAnimations={reduceMotion}
       enableSpotlight={true}
       spotlightRadius={200}
+      enableStars={true}
       className="max-w-5xl mx-auto grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4"
     >
       {funds.map((fund) => (
@@ -42,7 +64,6 @@ export function FundGrid({ funds }: { funds: Fund[] }) {
           title={fund.name}
           icon={<Wallet className="h-5 w-5 text-emerald-500" />}
         >
-          {/* Clickable Overlay using SLUG */}
           <div 
             className="absolute inset-0 z-20" 
             onClick={() => handleEnterFund(fund.slug)}
@@ -81,18 +102,41 @@ export function FundGrid({ funds }: { funds: Fund[] }) {
             </BentoCard>
           </div>
         </DialogTrigger>
-        <DialogContent>
+        
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create a New Fund</DialogTitle>
             <DialogDescription>
-              Start a new isolated lending project.
+              Start a new isolated lending project. You will be the owner.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-6 flex justify-center">
-             <Button onClick={() => alert("Hook this up to a createFund server action!")}>
-                Create Fund
-             </Button>
-          </div>
+          
+          <form onSubmit={handleCreate} className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Fund Name</Label>
+              <Input 
+                id="name" 
+                name="name" 
+                placeholder="e.g. My Startup Capital" 
+                required 
+                minLength={3}
+                autoComplete="off"
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Fund"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </MagicBento>

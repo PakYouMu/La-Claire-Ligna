@@ -19,17 +19,27 @@ interface ActiveLoansTableProps {
 
 export async function ActiveLoansTable({fundId}: ActiveLoansTableProps) {
   const supabase = await createClient();
-  
-  // 1. Fetch Loans
-  const { data: loans, error } = await supabase
+  // 1. Check if this ID corresponds to the General Fund
+  // We can do this efficiently by checking the slug for this ID, 
+  // OR we can pass a prop 'isGeneralView' from the page to avoid an extra DB call.
+  // For now, let's query the fund to be safe.
+  const { data: currentFund } = await supabase.from('funds').select('slug').eq('id', fundId).single();
+  const isGeneralView = currentFund?.slug === 'general-fund';
+
+  // 2. Conditional Query
+  let query = supabase
     .from("view_loan_summary")
     .select("*")
-    .eq("status", "ACTIVE")
-    .eq("fund_id", fundId)
+    .eq("status", "ACTIVE") 
     .order("start_date", { ascending: false });
 
+  if (!isGeneralView) {
+    query = query.eq("fund_id", fundId);
+  }
+
+  const { data: loans, error } = await query;
+
   if (error || !loans) {
-    console.error("Error fetching loans:", error);
     return <div>Error loading loans.</div>;
   }
 
@@ -87,7 +97,7 @@ export async function ActiveLoansTable({fundId}: ActiveLoansTableProps) {
           <h3 className="font-semibold text-responsive-xl">Active Loans</h3>
           <p className="text-responsive-sm text-muted-foreground">Manage collections and balances.</p>
         </div>
-        <CreateLoanModal />
+        <CreateLoanModal fundId={fundId}/>
       </div>
       
       {/* Table Section */}
