@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
 
 export async function getUserFunds() {
   const supabase = await createClient();
@@ -51,58 +52,41 @@ export async function createFund(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("You must be logged in to create a fund.");
+  if (!user) throw new Error("Not authenticated");
 
   const name = formData.get("name") as string;
-  if (!name || name.length < 3) {
-    throw new Error("Fund name must be at least 3 characters.");
-  }
+  const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
-  // 1. Generate Slug (Simple version: lowercase, dashes, remove special chars)
-  // e.g. "My Startup Fund!" -> "my-startup-fund"
-  let slug = name.toLowerCase().trim()
-    .replace(/[\s_]+/g, '-')     // Spaces/Underscores -> Dashes
-    .replace(/[^a-z0-9-]/g, ''); // Remove non-alphanumeric
+  // 1. Perform Database Operations inside a Try/Catch
+  let successSlug = "";
+  
+  try {
+    const { data, error } = await supabase
+      .from("funds")
+      .insert({
+        name,
+        slug,
+        owner_id: user.id,
+        currency: "PHP"
+      })
+      .select("slug")
+      .single();
 
-  // Append a timestamp to ensure uniqueness if needed (Optional but safe)
-  // slug = `${slug}-${Date.now().toString().slice(-4)}`;
-
-  // 2. Create the Fund
-  const { data: fund, error: fundError } = await supabase
-    .from("funds")
-    .insert({
-      name,
-      slug,
-      owner_id: user.id,
-      currency: "PHP" // Default, could be a form field later
-    })
-    .select()
-    .single();
-
-  if (fundError) {
-    // Handle duplicate slug error specifically if you want
-    if (fundError.code === '23505') { // Postgres unique constraint violation
-      throw new Error("A fund with this name/slug already exists. Please choose another.");
+    if (error) {
+      if (error.code === '23505') throw new Error("Name taken");
+      throw new Error(error.message);
     }
-    throw new Error("Failed to create fund: " + fundError.message);
+    
+    successSlug = data.slug;
+  } catch (error: any) {
+    // If there is a DB error, throw it so the client can display it
+    throw new Error(error.message);
   }
 
-  // 3. Add Creator as 'Owner' in Members
-  const { error: memberError } = await supabase
-    .from("fund_members")
-    .insert({
-      fund_id: fund.id,
-      user_id: user.id,
-      role: "owner"
-    });
+  // 2. Revalidate
+  revalidatePath("/funds");
 
-  if (memberError) {
-    // If this fails, we have an orphaned fund. In a real production app, 
-    // you'd use a Postgres Function (RPC) to do both in one transaction.
-    console.error("Failed to assign ownership:", memberError);
-    throw new Error("Fund created but membership failed.");
-  }
-
-  // 4. Redirect to the new workspace
-  redirect(`/base/${slug}/dashboard`);
+  // 3. Redirect OUTSIDE the Try/Catch
+  // FIX: Added "/funds/" to the beginning of the path
+  redirect(`/funds/${successSlug}/dashboard`); 
 }

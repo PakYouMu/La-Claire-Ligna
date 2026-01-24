@@ -69,5 +69,5 @@ export async function addCapital(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/base/${fundId}/dashboard`);
+  revalidatePath(`/funds/${fundId}/dashboard`);
 }

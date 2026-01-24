@@ -105,6 +105,6 @@ export async function createFullLoan(formData: FormData) {
 
   // 6. REVALIDATE
   // Revalidate the specific fund's dashboard and loans list
-  revalidatePath(`/base/${fundId}/dashboard`);
-  revalidatePath(`/base/${fundId}/loans`);
+  revalidatePath(`/funds/${fundId}/dashboard`);
+  revalidatePath(`/funds/${fundId}/loans`);
 }

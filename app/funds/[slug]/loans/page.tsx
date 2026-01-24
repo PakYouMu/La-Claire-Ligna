@@ -5,7 +5,7 @@ import { LoansBentoWrapper } from "@/components/loans/loans-grid";
 import { ActiveLoansTable } from "@/components/dashboard/active-loans-table"
 
 interface PageProps {
-  params: Promise<{ slug: string }>; // <--- CHANGED: We expect 'slug', not 'fundId'
+  params: Promise<{ slug: string }>;
 }
 
 export default async function LoansPage({ params }: PageProps) {
@@ -22,7 +22,7 @@ export default async function LoansPage({ params }: PageProps) {
   const fund = await getFundBySlug(slug);
 
   if (!fund) {
-    return notFound(); // Show 404 if slug is invalid (e.g. /base/potato/loans)
+    return notFound(); // Show 404 if slug is invalid (e.g. /funds/potato/loans)
   }
 
   return (

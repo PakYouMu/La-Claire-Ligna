@@ -1,84 +1,82 @@
 import { createClient } from "@/lib/supabase/server";
-import { BorrowerDirectoryClient } from "../dashboard/borrower-card"
+import { BorrowerDirectoryClient } from "../dashboard/borrower-card";
 
-export async function BorrowerList() {
+interface BorrowerListProps {
+  fundId: string;
+}
+
+export async function BorrowerList({ fundId }: BorrowerListProps) {
   const supabase = await createClient();
-  
-  // 1. Fetch ALL loan summaries
-  const { data: loanSummaries } = await supabase
-    .from("view_loan_summary")
-    .select("*")
-    .order("start_date", { ascending: false });
 
-  if (!loanSummaries || loanSummaries.length === 0) {
+  // 1. Fetch ALL Borrowers belonging to this Fund
+  const { data: borrowers } = await supabase
+    .from("borrowers")
+    .select("id, first_name, last_name, signature_url, created_at")
+    .eq("fund_id", fundId);
+
+  if (!borrowers || borrowers.length === 0) {
     return <BorrowerDirectoryClient data={[]} />;
   }
 
-  // 2. Active Loan IDs
-  const activeLoanIds = loanSummaries
-    .filter(l => l.status === 'ACTIVE')
-    .map(loan => loan.id);
+  // 2. Fetch ACTIVE Loans for this Fund
+  // We need this to determine who is "Active" and what their loan IDs are
+  const { data: activeLoans } = await supabase
+    .from("view_loan_summary")
+    .select("id, borrower_id, status")
+    .eq("fund_id", fundId)
+    .eq("status", "ACTIVE");
 
-  // 3. Pending Payments
-  const { data: paymentSchedules } = await supabase
-    .from("payment_schedule")
-    .select("loan_id, due_date, status")
-    .in("loan_id", activeLoanIds)
-    .eq("status", "PENDING")
-    .order("due_date", { ascending: true });
+  const activeLoanMap = new Map(); // Map<BorrowerID, LoanID>
+  const activeLoanIds: string[] = [];
 
-  // 4. Map Due Dates
-  const nextDueDateMap = new Map();
-  paymentSchedules?.forEach(schedule => {
-    if (!nextDueDateMap.has(schedule.loan_id)) {
-      nextDueDateMap.set(schedule.loan_id, schedule.due_date);
-    }
+  activeLoans?.forEach((loan) => {
+    activeLoanMap.set(loan.borrower_id, loan.id);
+    activeLoanIds.push(loan.id);
   });
 
-  // 5. Fetch Borrower Details
-  const borrowerIds = [...new Set(loanSummaries.map(l => l.borrower_id))];
-  const { data: borrowerDetails } = await supabase
-    .from("borrowers")
-    .select("id, signature_url, created_at")
-    .in("id", borrowerIds);
+  // 3. Fetch Next Payment Schedule for ACTIVE loans only
+  // We only care about due dates for loans that are currently running
+  let nextDueDatesMap = new Map(); // Map<LoanID, DateString>
+  
+  if (activeLoanIds.length > 0) {
+    const { data: schedules } = await supabase
+      .from("payment_schedule")
+      .select("loan_id, due_date")
+      .in("loan_id", activeLoanIds)
+      .eq("status", "PENDING")
+      .order("due_date", { ascending: true }); // Get earliest pending date
 
-  const borrowerDetailsMap = new Map(
-    borrowerDetails?.map(b => [b.id, b]) || []
-  );
-
-  // 6. Consolidate Data
-  const borrowerMap = new Map();
-
-  loanSummaries.forEach((loan) => {
-    const bId = loan.borrower_id;
-    const details = borrowerDetailsMap.get(bId);
-    const thisLoanDueDate = nextDueDateMap.get(loan.id);
-    const isActive = loan.status === 'ACTIVE';
-
-    if (!borrowerMap.has(bId)) {
-      borrowerMap.set(bId, {
-        id: bId,
-        first_name: loan.first_name,
-        last_name: loan.last_name,
-        created_at: details?.created_at || null,
-        signature_url: details?.signature_url || null,
-        has_active_loan: isActive,
-        next_due_date: thisLoanDueDate || null
-      });
-    } else {
-      const existing = borrowerMap.get(bId);
-      if (isActive) {
-        existing.has_active_loan = true;
-        if (thisLoanDueDate) {
-          if (!existing.next_due_date || new Date(thisLoanDueDate) < new Date(existing.next_due_date)) {
-            existing.next_due_date = thisLoanDueDate;
-          }
-        }
+    // Since we ordered by due_date ascending, the first entry for a loan_id is the next due date
+    schedules?.forEach((schedule) => {
+      if (!nextDueDatesMap.has(schedule.loan_id)) {
+        nextDueDatesMap.set(schedule.loan_id, schedule.due_date);
       }
-    }
+    });
+  }
+
+  // 4. Consolidate Data
+  // We map over the Borrowers (not loans) to ensure everyone is included
+  const preparedData = borrowers.map((b) => {
+    const activeLoanId = activeLoanMap.get(b.id);
+    const hasActiveLoan = !!activeLoanId;
+    
+    // If they have an active loan, look up the schedule. 
+    // If they don't, next_due_date is null.
+    const nextDueDate = hasActiveLoan 
+      ? nextDueDatesMap.get(activeLoanId) || null 
+      : null;
+
+    return {
+      id: b.id,
+      first_name: b.first_name,
+      last_name: b.last_name,
+      created_at: b.created_at,
+      signature_url: b.signature_url,
+      has_active_loan: hasActiveLoan,
+      next_due_date: nextDueDate,
+    };
   });
 
-  const preparedData = Array.from(borrowerMap.values());
-
+  // 5. Pass to Client Component
   return <BorrowerDirectoryClient data={preparedData} />;
 }

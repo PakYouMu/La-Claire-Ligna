@@ -12,7 +12,7 @@ export function GlobalNav() {
   const slug = params?.slug as string | undefined;
 
   const isFundScopedPage =
-    pathname?.startsWith("/base/") &&
+    pathname?.startsWith("/funds/") &&
     Boolean(slug);
 
   const landingLinks = (
@@ -27,9 +27,9 @@ export function GlobalNav() {
   const dashboardLinks = slug ? (
     <div className="flex flex-col gap-1">
       <Link href="/" className="nav-link-item">Funds</Link>
-      <Link href={`/base/${slug}/dashboard`} className="nav-link-item">Dashboard</Link>
-      <Link href={`/base/${slug}/loans`} className="nav-link-item">Loans</Link>
-      <Link href={`/base/${slug}/borrowers`} className="nav-link-item">Borrowers</Link>
+      <Link href={`/funds/${slug}/dashboard`} className="nav-link-item">Dashboard</Link>
+      <Link href={`/funds/${slug}/loans`} className="nav-link-item">Loans</Link>
+      <Link href={`/funds/${slug}/borrowers`} className="nav-link-item">Borrowers</Link>
     </div>
   ) : null;
 

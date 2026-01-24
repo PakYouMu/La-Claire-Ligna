@@ -25,7 +25,7 @@ export function FundGrid({ funds }: { funds: Fund[] }) {
   const [isCreating, setIsCreating] = useState(false); // Loading state
 
   const handleEnterFund = (fundSlug: string) => {
-    router.push(`/base/${fundSlug}/dashboard`);
+    router.push(`/funds/${fundSlug}/dashboard`);
   };
 
   const getRoleLabel = (fund: Fund) => {
@@ -44,6 +44,7 @@ export function FundGrid({ funds }: { funds: Fund[] }) {
       // The server action will handle the redirect on success
       await createFund(formData);
     } catch (error: any) {
+      if (error.message === "NEXT_REDIRECT") throw error;
       alert(error.message);
       setIsCreating(false);
     }

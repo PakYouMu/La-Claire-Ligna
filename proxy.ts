@@ -7,9 +7,9 @@ export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
 
   // 2. Define protected routes
-  // Note: /base is protected, but we handle the root logic separately below
+  // Note: /funds is protected, but we handle the root logic separately below
   const protectedRoutes = [
-    "/base", 
+    "/funds", 
     "/dashboard", 
     "/loans", 
     "/borrowers", 
@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
   // 5. Handle "Hub" Logic: Redirect Logged-In Users
   // If user is logged in and tries to visit Landing or Login, send them to Fund Selection
   if (user && (path === "/" || path.startsWith("/auth/login") || path === "/login")) {
-    return NextResponse.redirect(new URL("/base", request.url));
+    return NextResponse.redirect(new URL("/funds", request.url));
   }
 
   // 6. Return the Supabase response (Crucial for refreshing cookies)

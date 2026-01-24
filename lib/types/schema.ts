@@ -39,12 +39,23 @@ export interface WalletSummary {
   cash_on_hand: number;
 }
 
+export interface BorrowerStat {
+  id: string;
+  fund_id: string;
+  first_name: string;
+  last_name: string;
+  active_loan_count: number;
+  total_debt: number;
+  created_at: string;
+}
+
 // ==========================================
 // TABLE INTERFACES (For inserts/updates)
 // ==========================================
 
 export interface Borrower {
   id: string;
+  fund_id: string;
   first_name: string;
   last_name: string;
   signature_url?: string;
