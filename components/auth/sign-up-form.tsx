@@ -3,18 +3,12 @@
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function SignUpForm({
   className,
@@ -35,7 +29,6 @@ export function SignUpForm({
 
     if (password !== repeatPassword) {
       setError("Passwords do not match");
-      setIsLoading(false);
       return;
     }
 
@@ -58,63 +51,87 @@ export function SignUpForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
-              </Button>
+      {/* Header matching Login Form style */}
+      <div className="flex flex-col text-center mb-4">
+        <h1 className="text-2xl font-serif font-bold tracking-tight">Create Account</h1>
+        <p className="text-sm text-muted-foreground">Join La Clair Ligña workspace</p>
+      </div>
+
+      <form onSubmit={handleSignUp}>
+        <div className="flex flex-col gap-4">
+          
+          {/* Email Input */}
+          <div className="grid gap-2">
+            <Label htmlFor="email" className="font-semibold">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              // Glassmorphism style to match Login Form
+              className="h-11 bg-background/60 backdrop-blur-sm border-foreground/20 focus-visible:ring-foreground/50 transition-all"
+            />
+          </div>
+
+          {/* Password Input */}
+          <div className="grid gap-2">
+            <Label htmlFor="password" className="font-semibold">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-11 bg-background/60 backdrop-blur-sm border-foreground/20 focus-visible:ring-foreground/50 transition-all"
+            />
+          </div>
+
+          {/* Repeat Password Input */}
+          <div className="grid gap-2">
+            <Label htmlFor="repeat-password" className="font-semibold">Repeat Password</Label>
+            <Input
+              id="repeat-password"
+              type="password"
+              required
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+              className="h-11 bg-background/60 backdrop-blur-sm border-foreground/20 focus-visible:ring-foreground/50 transition-all"
+            />
+          </div>
+
+          {/* Error Box */}
+          {error && (
+            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md font-medium border border-destructive/20">
+              {error}
             </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+
+          {/* Submit Button */}
+          <Button type="submit" className="w-full h-11 mt-4 font-bold" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              "Sign Up"
+            )}
+          </Button>
+        </div>
+
+        {/* Footer Link */}
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link
+            href="/auth/login"
+            className="font-bold text-foreground underline-offset-4 hover:underline"
+          >
+            Log in
+          </Link>
+        </div>
+      </form>
     </div>
   );
 }

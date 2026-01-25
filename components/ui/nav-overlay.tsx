@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation";
 import { ThemeSwitcher } from "@/components/wrappers/theme-switcher-wrapper";
 import MetallicSheen from "@/components/wrappers/metallic-sheen-wrapper";
 import { MotionToggleButton } from "@/components/ui/motion-toggle-button"; 
-import { Menu, X, LayoutGrid } from "lucide-react"; // Added LayoutGrid icon
+import { Menu, X} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useMotion } from "@/components/context/motion-context";
 import { useAuth } from "@/components/wrappers/auth-wrapper";
+import { cn } from "@/lib/utils";
 
 interface NavOverlayProps {
   navItems?: React.ReactNode; 
@@ -24,7 +25,9 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
   const pathname = usePathname(); 
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { toggleMotion } = useMotion();
+  const shouldInvertLogo = ["/auth/login", "/auth/sign-up"].includes(pathname);
 
+  
   useEffect(() => {
     if (isMenuOpen) {
       handleClose();
@@ -140,7 +143,11 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
     <nav className="nav-overlay-container">
       <Link 
         href={"/"} 
-        className="nav-logo-link"
+        className={cn(
+          // CHANGED: duration-300 -> duration-700, added ease-in-out
+          "nav-logo-link z-50 relative transition-all duration-700 ease-in-out", 
+          (shouldInvertLogo && !isMenuOpen) && "invert" 
+        )}
         onPointerMove={forwardPointerEvent}
         onPointerEnter={forwardPointerEvent}
         onPointerLeave={forwardPointerEvent}

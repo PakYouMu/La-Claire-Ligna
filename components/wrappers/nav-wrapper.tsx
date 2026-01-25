@@ -22,8 +22,6 @@ export function GlobalNav() {
       <Link href="/about" className="nav-link-item">About Us</Link>
     </div>
   );
-
-  // CHANGED: Use slug in URLs
   const dashboardLinks = slug ? (
     <div className="flex flex-col gap-1">
       <Link href="/" className="nav-link-item">Funds</Link>

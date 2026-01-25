@@ -373,7 +373,7 @@
     hsl(var(--background) / 0.95)
   );
   backdrop-filter: blur(32px);
-  animation: nav-overlay-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: nav-overlay-enter 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* === NAVIGATION LINKS === */
@@ -636,7 +636,7 @@
 /* Animation helpers */
 .nav-spacer-fill { flex: 1; }
 .nav-mobile-overlay.closing {
-  animation: nav-overlay-exit 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: nav-overlay-exit 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   pointer-events: none;
 }
 
