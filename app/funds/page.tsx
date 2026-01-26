@@ -12,7 +12,15 @@ export default async function FundSelectionPage() {
     redirect("/auth/login");
   }
 
-  const funds = await getUserFunds();
+   const result = await getUserFunds();
+
+  if (!result.success) {
+    const realError = result.error || "Unknown Error";
+    redirect(`/funds/error?message=${encodeURIComponent(realError)}`);
+  }
+
+
+  const funds = result.data || [];
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background p-6 pt-16 md:pt-[123px]">

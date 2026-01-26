@@ -8,18 +8,19 @@ interface BorrowerListProps {
 export async function BorrowerList({ fundId }: BorrowerListProps) {
   const supabase = await createClient();
 
-  // 1. Fetch ALL Borrowers belonging to this Fund
+  // 1. Fetch Borrowers
   const { data: borrowers } = await supabase
     .from("borrowers")
     .select("id, first_name, last_name, signature_url, created_at")
     .eq("fund_id", fundId);
 
+  // 2. Handle Empty State
+  // If null or empty, return empty array immediately so the UI shows "No borrowers"
   if (!borrowers || borrowers.length === 0) {
     return <BorrowerDirectoryClient data={[]} />;
   }
 
-  // 2. Fetch ACTIVE Loans for this Fund
-  // We need this to determine who is "Active" and what their loan IDs are
+  // 3. Fetch ACTIVE Loans for this Fund
   const { data: activeLoans } = await supabase
     .from("view_loan_summary")
     .select("id, borrower_id, status")
@@ -29,13 +30,14 @@ export async function BorrowerList({ fundId }: BorrowerListProps) {
   const activeLoanMap = new Map(); // Map<BorrowerID, LoanID>
   const activeLoanIds: string[] = [];
 
-  activeLoans?.forEach((loan) => {
-    activeLoanMap.set(loan.borrower_id, loan.id);
-    activeLoanIds.push(loan.id);
-  });
+  if (activeLoans) {
+    activeLoans.forEach((loan) => {
+      activeLoanMap.set(loan.borrower_id, loan.id);
+      activeLoanIds.push(loan.id);
+    });
+  }
 
-  // 3. Fetch Next Payment Schedule for ACTIVE loans only
-  // We only care about due dates for loans that are currently running
+  // 4. Fetch Next Payment Schedule for ACTIVE loans only
   let nextDueDatesMap = new Map(); // Map<LoanID, DateString>
   
   if (activeLoanIds.length > 0) {
@@ -44,24 +46,21 @@ export async function BorrowerList({ fundId }: BorrowerListProps) {
       .select("loan_id, due_date")
       .in("loan_id", activeLoanIds)
       .eq("status", "PENDING")
-      .order("due_date", { ascending: true }); // Get earliest pending date
+      .order("due_date", { ascending: true }); 
 
-    // Since we ordered by due_date ascending, the first entry for a loan_id is the next due date
     schedules?.forEach((schedule) => {
+      // Only set the first one found (earliest date due to sorting)
       if (!nextDueDatesMap.has(schedule.loan_id)) {
         nextDueDatesMap.set(schedule.loan_id, schedule.due_date);
       }
     });
   }
 
-  // 4. Consolidate Data
-  // We map over the Borrowers (not loans) to ensure everyone is included
+  // 5. Consolidate Data
   const preparedData = borrowers.map((b) => {
     const activeLoanId = activeLoanMap.get(b.id);
     const hasActiveLoan = !!activeLoanId;
     
-    // If they have an active loan, look up the schedule. 
-    // If they don't, next_due_date is null.
     const nextDueDate = hasActiveLoan 
       ? nextDueDatesMap.get(activeLoanId) || null 
       : null;
@@ -77,6 +76,5 @@ export async function BorrowerList({ fundId }: BorrowerListProps) {
     };
   });
 
-  // 5. Pass to Client Component
   return <BorrowerDirectoryClient data={preparedData} />;
 }

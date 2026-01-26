@@ -3,7 +3,7 @@
 import { useMotion } from "@/components/context/motion-context";
 import MagicBento, { BentoCard } from "@/components/ui/magic-bento";
 
-export function LoansBentoWrapper({ children }: { children: React.ReactNode }) {
+export function BorrowersBentoWrapper({ children }: { children: React.ReactNode }) {
   const { reduceMotion } = useMotion();
 
   return (
@@ -19,10 +19,9 @@ export function LoansBentoWrapper({ children }: { children: React.ReactNode }) {
         className="gap-responsive"
       >
         {/* 
-            col-span-full: Spans entire width
-            min-h-[780px]: Matches Borrowers Grid height for consistency
-            h-full: Allows it to stretch
-            noPadding: Essential for the table to touch edges
+            col-span-full: Spans full width 
+            min-h-[600px]: Sets the height of the card
+            noPadding: We handle padding inside the child component so headers/footers touch edges
         */}
         <BentoCard 
           className="col-span-full min-h-[780px] h-full" 

@@ -1,5 +1,5 @@
 import MotionToggleWrapper from "@/components/wrappers/motion-toggle-wrapper";
-import AuthErrorContent from "@/components/auth/auth-error-content";
+import AuthErrorContent from "@/components/error/auth-error-content";
 
 export default async function Page({
   searchParams,
