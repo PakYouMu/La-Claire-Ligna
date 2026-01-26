@@ -3,22 +3,17 @@
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function ForgotPasswordForm({
   className,
+  textColor = "white",
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div"> & { textColor?: string }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -31,7 +26,6 @@ export function ForgotPasswordForm({
     setError(null);
 
     try {
-      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/update-password`,
       });
@@ -45,60 +39,120 @@ export function ForgotPasswordForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-4", className)} {...props}>
       {success ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>Password reset instructions sent</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
+        <>
+          <div className="flex flex-col text-center mb-4">
+            <p 
+              className="text-xl font-serif mb-2"
+              style={{ color: textColor }}
+            >
+              Check Your Email
             </p>
-          </CardContent>
-        </Card>
+            <p 
+              className="text-sm"
+              style={{ color: textColor, opacity: 0.8 }}
+            >
+              Password reset instructions sent
+            </p>
+          </div>
+          <p 
+            className="text-sm text-center"
+            style={{ color: textColor, opacity: 0.7 }}
+          >
+            If you registered using your email and password, you will receive
+            a password reset email.
+          </p>
+        </>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-            <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleForgotPassword}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send reset email"}
-                </Button>
-              </div>
-              <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
-                <Link
-                  href="/auth/login"
-                  className="underline underline-offset-4"
+        <>
+          <div className="flex flex-col text-center mb-4">
+            <p 
+              className="text-xl font-serif mb-2"
+              style={{ color: textColor }}
+            >
+              Reset Your Password
+            </p>
+            <p 
+              className="text-sm"
+              style={{ color: textColor, opacity: 0.8 }}
+            >
+              Type in your email and we&apos;ll send you a link to reset your password
+            </p>
+          </div>
+
+          <form onSubmit={handleForgotPassword}>
+            <div className="flex flex-col gap-4">
+              <div className="grid gap-2">
+                <Label 
+                  htmlFor="email"
+                  className="font-semibold"
+                  style={{ color: textColor }}
                 >
-                  Login
-                </Link>
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 border shadow-none focus-visible:ring-1 bg-transparent"
+                  style={{
+                    borderColor: textColor === 'black' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
+                    color: textColor,
+                  }}
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
+
+              {error && (
+                <div 
+                  className="text-sm p-3 rounded-md font-bold"
+                  style={{
+                    backgroundColor: 'rgba(255, 0, 0, 0.15)',
+                    color: '#ff0000',
+                    border: '1px solid rgba(255, 0, 0, 0.4)',
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 mt-4 font-bold border-none hover:opacity-90 transition-opacity"
+                disabled={isLoading}
+                style={{
+                  backgroundColor: textColor,
+                  color: textColor === 'black' ? 'white' : 'black',
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send reset email"
+                )}
+              </Button>
+            </div>
+            <div 
+              className="mt-6 text-center text-sm"
+              style={{ color: textColor }}
+            >
+              Already have an account?{" "}
+              <Link
+                href="/auth/login"
+                className="font-bold underline-offset-4 hover:underline"
+                style={{ color: textColor }}
+              >
+                Login
+              </Link>
+            </div>
+          </form>
+        </>
       )}
     </div>
   );

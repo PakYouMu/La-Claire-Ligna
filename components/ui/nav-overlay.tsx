@@ -25,7 +25,7 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
   const pathname = usePathname(); 
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { toggleMotion } = useMotion();
-  const shouldInvertLogo = ["/auth/login", "/auth/sign-up"].includes(pathname);
+  const shouldInvertLogo = ["/auth/login", "/auth/sign-up", "/auth/forgot-password", "/auth/update-password"].includes(pathname);
 
   
   useEffect(() => {
