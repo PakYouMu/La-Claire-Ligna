@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 export type LoanLookupResult = {
   borrower: {
@@ -15,7 +15,7 @@ export type LoanLookupResult = {
     total_due: number;
     total_paid: number;
     remaining_balance: number;
-    status: "ACTIVE" | "PAID"; // From view_loan_summary
+    status: "ACTIVE" | "PAID";
     start_date: string;
     duration_months: number;
   }[];
@@ -28,10 +28,27 @@ export type LoanLookupResult = {
 };
 
 export async function lookupBorrowerData(fullName: string) {
-  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  // 1. Parse Name
-  const nameParts = fullName.trim().split(/\s+/);
+  // 1. Sanity Check for Env Vars
+  if (!supabaseUrl || !serviceRoleKey) {
+    return { error: "Server configuration error. Please contact admin." };
+  }
+
+  // 2. Initialize Admin Client (Inside the function scope)
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+
+  // 3. Parse Name
+  const cleanName = fullName.trim();
+  const nameParts = cleanName.split(/\s+/);
+
   if (nameParts.length < 2) {
     return { error: "Please enter your full name (First and Last)." };
   }
@@ -39,36 +56,57 @@ export async function lookupBorrowerData(fullName: string) {
   const searchFirst = nameParts[0];
   const searchLast = nameParts.slice(1).join(" ");
 
-  // 2. Find Borrower
-  // We use ilike for case-insensitive matching
-  const { data: borrower, error: bError } = await supabase
+  // 4. Find Borrower
+  const { data: borrowers, error: bError } = await supabase
     .from("borrowers")
     .select("id, first_name, last_name, created_at")
     .ilike("first_name", searchFirst)
-    .ilike("last_name", searchLast)
-    .maybeSingle();
+    .ilike("last_name", searchLast);
 
-  if (bError) return { error: "Database error occurred." };
-  if (!borrower) return { error: "Borrower not found. Please check spelling." };
+  if (bError) {
+    console.error("Lookup Error:", bError);
+    return { error: "System error occurred while searching." };
+  }
 
-  // 3. Fetch Loans using the VIEW (Calculates status/balance automatically)
+  if (!borrowers || borrowers.length === 0) {
+    return { error: "No records found. Check spelling or try your registered name." };
+  }
+
+  if (borrowers.length > 1) {
+    return { error: "Multiple records found. Please contact support to verify your ID." };
+  }
+
+  const borrower = borrowers[0];
+
+  // 5. Fetch Loans
   const { data: loans, error: lError } = await supabase
     .from("view_loan_summary")
     .select("*")
     .eq("borrower_id", borrower.id)
     .order("start_date", { ascending: false });
 
-  if (lError) return { error: "Could not retrieve loan history." };
+  if (lError) {
+    console.error("Loan Fetch Error:", lError);
+    return { error: "Could not retrieve loan history." };
+  }
 
-  // 4. Fetch Payments for these loans
+  // 6. Fetch Payments
   const loanIds = loans.map((l) => l.id);
-  const { data: payments, error: pError } = await supabase
-    .from("payments")
-    .select("*")
-    .in("loan_id", loanIds)
-    .order("payment_date", { ascending: false });
+  let payments: any[] = [];
 
-  if (pError) return { error: "Could not retrieve payment history." };
+  if (loanIds.length > 0) {
+    const { data: pData, error: pError } = await supabase
+      .from("payments")
+      .select("id, amount, payment_date, notes")
+      .in("loan_id", loanIds)
+      .order("payment_date", { ascending: false });
+
+    if (pError) {
+      console.error("Payment Fetch Error:", pError);
+      return { error: "Could not retrieve payment history." };
+    }
+    payments = pData;
+  }
 
   return {
     success: true,
