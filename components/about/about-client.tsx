@@ -13,9 +13,10 @@ export default function AboutClient() {
   const { reduceMotion } = useMotion();
 
   return (
-    <div className="w-full max-w-[90rem] mx-auto p-responsive space-y-4">
-      <div className="text-center md:text-left animate-in fade-in slide-in-from-bottom-4 duration-700 mt-16">
-        <p className="text-muted-foreground text-xl max-w-2xl">
+    <div className="w-full max-w-[90rem] mx-auto p-responsive space-y-4 overflow-y-auto">
+      {/* Hero Text - Responsive margins and font sizes */}
+      <div className="text-center md:text-left animate-in fade-in slide-in-from-bottom-4 duration-700 about-hero-text about-page-top-padding">
+        <p className="text-muted-foreground max-w-2xl about-card-body">
           The Clear Line. Bringing clarity to chaotic financial tracking.
         </p>
       </div>
@@ -30,12 +31,14 @@ export default function AboutClient() {
         <BentoCard 
           title="The Story" 
           icon={<Sparkles className="h-4 w-4" />}
-          className="col-span-1 md:col-span-2 md:row-span-2 min-h-[400px]"
+          className="col-span-1 md:col-span-2 md:row-span-2 about-card-story"
         >
-          <div className="flex flex-col h-full justify-start pt-6 px-2 space-y-6">
-            <h3 className="text-2xl font-bold text-foreground">A Fusion of Influences</h3>
+          <div className="flex flex-col h-full justify-start px-2 space-y-6 about-card-padding-top">
+            <h3 className="font-bold text-foreground about-card-heading">
+              A Fusion of Influences
+            </h3>
             
-            <div className="space-y-4 text-base text-muted-foreground leading-relaxed">
+            <div className="space-y-4 text-muted-foreground leading-relaxed about-card-body">
               <p>
                 The name <strong>La Clair Ligña</strong> is a fusion of influences; a nod to French elegance and the Filipino word <em>"Linya"</em> (Line). It represents a clear, direct path through financial management.
               </p>
@@ -53,14 +56,16 @@ export default function AboutClient() {
         <BentoCard 
           title="The Mission" 
           icon={<Target className="h-4 w-4" />}
-          className="col-span-1 md:col-span-2 md:row-span-1 min-h-[220px]"
+          className="col-span-1 md:col-span-2 md:row-span-1 about-card-standard"
         >
           <div className="flex flex-col h-full justify-center px-2">
-            <h3 className="text-2xl font-bold text-foreground mb-3">Beyond the Spreadsheet</h3>
-            <p className="text-base text-muted-foreground leading-relaxed">
+            <h3 className="font-bold text-foreground about-card-heading">
+              Beyond the Spreadsheet
+            </h3>
+            <p className="text-muted-foreground leading-relaxed about-card-body">
               Most loan software is either too expensive (B2B) or requires you to build it yourself (DIY Excel). I want to fill the gap. 
             </p>
-            <p className="text-base text-muted-foreground mt-3">
+            <p className="text-muted-foreground about-card-body about-card-spacing">
               My goal is to provide <strong>consumer-grade software for the masses</strong>; accessible, open, and free from the clutter of manual tracking.
             </p>
           </div>
@@ -70,11 +75,13 @@ export default function AboutClient() {
         <BentoCard 
           title="Core Values" 
           icon={<HeartHandshake className="h-4 w-4" />}
-          className="col-span-1 md:col-span-1 md:row-span-1 min-h-[220px]"
+          className="col-span-1 md:col-span-1 md:row-span-1 about-card-standard"
         >
            <div className="flex flex-col justify-center px-2">
-            <h3 className="text-2xl font-bold text-foreground mb-3">Our Pillars</h3>
-            <p className="text-base text-muted-foreground leading-relaxed">
+            <h3 className="font-bold text-foreground about-card-heading">
+              Our Pillars
+            </h3>
+            <p className="text-muted-foreground leading-relaxed about-card-body">
               We advocate for <strong>Adaptability</strong> in access, <strong>Integrity</strong> in data handling, and <strong>Efficiency</strong> in your workflow.
             </p>
           </div>
@@ -84,11 +91,13 @@ export default function AboutClient() {
         <BentoCard 
           title="Privacy First" 
           icon={<Lock className="h-4 w-4" />}
-          className="col-span-1 md:col-span-1 md:row-span-1 min-h-[220px]"
+          className="col-span-1 md:col-span-1 md:row-span-1 about-card-standard"
         >
            <div className="flex flex-col h-full justify-center px-2">
-            <h3 className="text-2xl font-bold text-foreground mb-3">Your Data; Only for You</h3>
-            <p className="text-base text-muted-foreground leading-relaxed">
+            <h3 className="font-bold text-foreground about-card-heading">
+              Your Data; Only for You
+            </h3>
+            <p className="text-muted-foreground leading-relaxed about-card-body">
               We use strict database rules to ensure that your ledger is completely invisible to others. No data sharing, no prying eyes.
             </p>
           </div>
@@ -98,11 +107,13 @@ export default function AboutClient() {
         <BentoCard 
           title="Built for Everyone" 
           icon={<Globe className="h-4 w-4" />}
-          className="col-span-1 md:col-span-2 md:row-span-1 min-h-[220px]"
+          className="col-span-1 md:col-span-2 md:row-span-1 about-card-standard"
         >
           <div className="flex flex-col h-full justify-center px-2">
-            <h3 className="text-2xl font-bold text-foreground mb-3">Open & Accessible</h3>
-            <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
+            <h3 className="font-bold text-foreground about-card-heading">
+              Open & Accessible
+            </h3>
+            <p className="text-muted-foreground leading-relaxed max-w-2xl about-card-body">
               Whether you are managing side-hustle loans or tracking emergency funds, this tool is designed to be free and available to all. I believe better tools lead to better financial habits.
             </p>
           </div>
@@ -112,24 +123,21 @@ export default function AboutClient() {
         <BentoCard 
           title="Get In Touch" 
           icon={<Mail className="h-4 w-4" />}
-          className="col-span-1 md:col-span-2 md:row-span-1 min-h-[180px]"
+          className="col-span-1 md:col-span-2 md:row-span-1 about-card-contact"
         >
-           {/* 
-              UPDATED LAYOUT: 
-              - justify-between ensures the text sits at the top 
-              - and the buttons sit at the bottom, mimicking the visual weight of other cards.
-           */}
-           <div className="flex flex-col h-full justify-between px-2 pt-2">
+           <div className="flex flex-col h-full justify-between px-2 about-contact-padding">
              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                <div>
-                 <h3 className="text-2xl font-bold text-foreground mb-2">Contact the Developer</h3>
-                 <p className="text-base text-muted-foreground leading-relaxed">
+                 <h3 className="font-bold text-foreground about-contact-heading">
+                   Contact the Developer
+                 </h3>
+                 <p className="text-muted-foreground leading-relaxed about-card-body">
                    Support available on Sundays (GMT+8).
                  </p>
                </div>
                
                {/* Action Buttons */}
-               <div className="flex gap-3 self-start md:self-center mt-2 md:mt-16">
+               <div className="flex gap-3 self-start md:self-center about-button-spacing">
                   <Button variant="outline" size="lg" asChild>
                     <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Email Me</a>
                   </Button>
