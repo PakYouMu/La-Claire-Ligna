@@ -131,7 +131,7 @@ export default function AboutClient() {
                {/* Action Buttons */}
                <div className="flex gap-3 self-start md:self-center mt-2 md:mt-16">
                   <Button variant="outline" size="lg" asChild>
-                    <a href="mailto:support@yourdomain.com">Email Us</a>
+                    <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Email Me</a>
                   </Button>
                   <Button size="lg" asChild>
                     <Link href="/loan-tracking">Check Loan</Link>
