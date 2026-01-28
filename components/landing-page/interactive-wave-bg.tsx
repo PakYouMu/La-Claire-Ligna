@@ -24,7 +24,7 @@ void main() {
 `;
 
 const fragmentShader = `
-precision highp float;
+precision mediump float;
 
 uniform float iTime;
 uniform vec3 iResolution;
@@ -32,6 +32,7 @@ uniform vec2 uMouse;
 uniform float uHover;
 uniform vec3 uColorHero;
 uniform vec3 uColorBg;
+uniform float uQuality; // New: quality multiplier for performance
 
 mat2 rotate2d(float angle){
     return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
@@ -63,9 +64,14 @@ vec4 renderRibbon(
     
     float blurLevel = smoothstep(1.0, 2.5, scale);
     
+    // Adaptive loop count based on quality
+    int maxIterations = int(15.0 * uQuality);
+    
     for (int i = 0; i < 35; i++) {
+        if (i >= maxIterations) break;
+        
         float fi = float(i);
-        float progress = fi / 35.0; 
+        float progress = fi / float(maxIterations); 
         
         float spineY = sin(localUv.x * 1.0 + t) * 0.3; 
         float twist = sin(localUv.x * 1.5 + t * 1.2) * 0.5 + 0.5; 
@@ -74,7 +80,6 @@ vec4 renderRibbon(
         float mouseDistX = abs(localUv.x - localMouse.x);
         float mouseDistY = abs((spineY + bundleOffset) - localMouse.y);
         
-        // Influence shape: (8.0, 8.0) for rounder, localized interaction
         float influence = exp(-mouseDistX * 7.0) * exp(-mouseDistY * 5.0) * uHover;
         float vibration = sin(localUv.x * 40.0 - iTime * 20.0 + fi * 2.0) * 0.08 * influence;
         
@@ -88,7 +93,6 @@ vec4 renderRibbon(
         float blurThickness = 0.01; 
         float currentThickness = mix(baseThickness, blurThickness, blurLevel);
         
-        // Intensity determines both brightness AND opacity
         float intensity = glowIntensity / (dist + currentThickness);
         float combinedFade = depthFade * edgeFade;
         
@@ -179,15 +183,25 @@ export default function HelixCanvas({
     camera.position.z = 1;
 
     const renderer = new WebGLRenderer({ 
-      antialias: true, 
-      alpha: true 
+      antialias: false, // Disable antialiasing for better performance
+      alpha: true,
+      powerPreference: 'high-performance' // Prefer performance over quality
     });
     
-    const dpr = Math.min(window.devicePixelRatio, 2);
+    // Detect device capabilities
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isLowEnd = isMobile || navigator.hardwareConcurrency <= 4;
+    
+    // Adaptive pixel ratio based on device
+    const dpr = isLowEnd ? 1 : Math.min(window.devicePixelRatio, 1.5);
     renderer.setPixelRatio(dpr);
+    
     const el = containerRef.current;
     renderer.setSize(el.clientWidth, el.clientHeight);
     el.appendChild(renderer.domElement);
+
+    // Adaptive quality based on device
+    const quality = isLowEnd ? 0.7 : 1.5; // Mobile: 10-11 iterations, Desktop: 22-23 iterations
 
     const uniforms = {
       iTime: { value: 0 },
@@ -196,6 +210,7 @@ export default function HelixCanvas({
       uHover: { value: 0 },
       uColorHero: { value: colorToVec3(heroColor) },
       uColorBg: { value: colorToVec3(backgroundColor) },
+      uQuality: { value: quality }
     };
 
     const material = new ShaderMaterial({
@@ -293,18 +308,40 @@ export default function HelixCanvas({
     el.addEventListener('touchcancel', handleTouchEnd);
 
     let raf = 0;
-    const animate = () => {
+    let lastFrameTime = 0;
+    const targetFPS = isLowEnd ? 30 : 60; // 30fps on mobile, 60fps on desktop
+    const frameInterval = 1000 / targetFPS;
+    
+    const animate = (currentTime: number) => {
+      const deltaTime = currentTime - lastFrameTime;
+      
+      // Skip frame if not enough time has passed
+      if (deltaTime < frameInterval) {
+        raf = requestAnimationFrame(animate);
+        return;
+      }
+      
+      lastFrameTime = currentTime - (deltaTime % frameInterval);
+      
       uniforms.iTime.value = clock.getElapsedTime() * speed;
       mouseRef.current.lerp(targetMouseRef.current, mouseDamping);
       uniforms.uMouse.value.copy(mouseRef.current);
       uniforms.uHover.value += (isHoveringRef.current - uniforms.uHover.value) * mouseDamping;
-      uniforms.uColorHero.value.copy(colorToVec3(heroColor));
-      uniforms.uColorBg.value.copy(colorToVec3(backgroundColor));
+      
+      // Only update colors if they've changed (avoid unnecessary CPU work)
+      const newHeroColor = colorToVec3(heroColor);
+      const newBgColor = colorToVec3(backgroundColor);
+      if (!uniforms.uColorHero.value.equals(newHeroColor)) {
+        uniforms.uColorHero.value.copy(newHeroColor);
+      }
+      if (!uniforms.uColorBg.value.equals(newBgColor)) {
+        uniforms.uColorBg.value.copy(newBgColor);
+      }
 
       renderer.render(scene, camera);
       raf = requestAnimationFrame(animate);
     };
-    animate();
+    animate(0);
 
     return () => {
       cancelAnimationFrame(raf);
