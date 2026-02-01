@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { 
+  useState,
+  useMemo 
+} from "react";
 import { 
   Table, 
   TableBody, 
@@ -13,7 +16,14 @@ import { PaymentDialog } from "../dashboard/modals/payment-dialog";
 import { CreateLoanModal } from "../dashboard/modals/create-loan-modal";
 import { SignaturePreview } from "../dashboard/modals/signature-modal";
 import { LoanSummary } from "@/lib/types/schema"; 
-import { CalendarClock, Banknote, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  CalendarClock,
+  Banknote,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+import { EditLoanModal } from "../dashboard/modals/edit-loan-modal";
+import { DeleteLoanModal } from "../dashboard/modals/delete-loan-modal";
 
 export type EnrichedLoan = LoanSummary & {
   next_due_date: string | null;
@@ -86,18 +96,27 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
   const getDueStatus = (dateStr: string | null) => {
     if (!dateStr) return { text: "Completed", sub: null, isOverdue: false, isDueToday: false };
     
+    // 1. Get Real Midnight (Start of today)
     const today = new Date();
-    today.setHours(0,0,0,0);
-    const due = new Date(dateStr);
+    today.setHours(0, 0, 0, 0);
+
+    // 2. Parse Due Date (Ensure it treats YYYY-MM-DD as Local Midnight, not UTC)
+    const due = new Date(dateStr + "T00:00:00");
     
+    // 3. Calculate Difference
     const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); // Use round, not ceil
+
+    // 4. Format for display
     const formatted = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     if (diffDays < 0) return { text: `${formatted}`, sub: "Overdue", isOverdue: true, isDueToday: false };
+    
+    // STRICT check for Today
     if (diffDays === 0) return { text: "Today", sub: null, isOverdue: false, isDueToday: true };
+    
     if (diffDays <= 3) return { text: formatted, sub: `in ${diffDays}d`, isOverdue: false, isDueToday: false };
+    
     return { text: formatted, sub: null, isOverdue: false, isDueToday: false };
   };
 
@@ -125,7 +144,7 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
               <TableHead className="text-center font-semibold">Payday Due</TableHead>
               <TableHead className="text-center w-[150px] font-semibold">Balance</TableHead>
               <TableHead className="text-center font-semibold">Sign</TableHead>
-              <TableHead className="text-center font-semibold pr-6">Action</TableHead>
+              <TableHead className="text-center font-semibold pr-6 w-[200px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -228,12 +247,16 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
 
                       {/* Action */}
                       <TableCell className="text-center pr-6">
-                        <PaymentDialog 
-                          loanId={loan.id} 
-                          borrowerName={`${loan.first_name} ${loan.last_name}`}
-                          amortization={loan.amortization_per_payday}
-                          balance={loan.remaining_balance}
-                        />
+                        <div className="flex items-center justify-center gap-2">
+                          <EditLoanModal loan={loan} />
+                          <PaymentDialog 
+                            loanId={loan.id} 
+                            borrowerName={`${loan.first_name} ${loan.last_name}`}
+                            amortization={loan.amortization_per_payday}
+                            balance={loan.remaining_balance}
+                          />
+                          <DeleteLoanModal loan={loan} />
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

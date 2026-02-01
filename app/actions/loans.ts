@@ -108,3 +108,46 @@ export async function createFullLoan(formData: FormData) {
   revalidatePath(`/funds/${fundId}/dashboard`);
   revalidatePath(`/funds/${fundId}/loans`);
 }
+
+export async function updateLoan(loanId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const principal = parseFloat(formData.get("principal") as string);
+  const interest_rate = parseFloat(formData.get("interest_rate") as string);
+  const duration_months = parseInt(formData.get("duration_months") as string);
+  const start_date = formData.get("start_date") as string;
+
+  const { error } = await supabase
+    .from("loans")
+    .update({
+      principal,
+      interest_rate,
+      duration_months,
+      start_date,
+    })
+    .eq("id", loanId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/funds/[slug]/loans", "page"); // Revalidate the page
+  return { success: true };
+}
+
+export async function deleteLoan(loanId: string) {
+  const supabase = await createClient();
+
+  // Perform Soft Delete
+  const { error } = await supabase
+    .from("loans")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", loanId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/funds/[slug]/loans", "page");
+  return { success: true };
+}
