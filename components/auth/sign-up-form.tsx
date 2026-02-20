@@ -59,7 +59,7 @@ export function SignUpForm({
     <div className={cn("flex flex-col", className)} {...props}>
       {/* Header */}
       <div className="flex flex-col text-center mb-4">
-        <p 
+        <p
           className="text-xl font-serif"
           style={{ color: finalTextColor }}
         >
@@ -69,11 +69,11 @@ export function SignUpForm({
 
       <form onSubmit={handleSignUp}>
         <div className="flex flex-col gap-4">
-          
+
           {/* Email Input */}
           <div className="grid gap-2">
-            <Label 
-              htmlFor="email" 
+            <Label
+              htmlFor="email"
               className="font-semibold"
               style={{ color: finalTextColor }}
             >
@@ -95,8 +95,8 @@ export function SignUpForm({
           </div>
 
           <div className="grid gap-2">
-            <Label 
-              htmlFor="password" 
+            <Label
+              htmlFor="password"
               className="font-semibold"
               style={{ color: finalTextColor }}
             >
@@ -118,8 +118,8 @@ export function SignUpForm({
 
           {/* Repeat Password Input */}
           <div className="grid gap-2">
-            <Label 
-              htmlFor="repeat-password" 
+            <Label
+              htmlFor="repeat-password"
               className="font-semibold"
               style={{ color: finalTextColor }}
             >
@@ -141,7 +141,7 @@ export function SignUpForm({
 
           {/* Error Box */}
           {error && (
-            <div 
+            <div
               className="text-sm p-3 rounded-md font-bold"
               style={{
                 backgroundColor: 'rgba(255, 0, 0, 0.15)',
@@ -154,9 +154,9 @@ export function SignUpForm({
           )}
 
           {/* Submit Button */}
-          <Button 
-            type="submit" 
-            className="w-full h-11 mt-4 font-bold border-none hover:opacity-90 transition-opacity" 
+          <Button
+            type="submit"
+            className="w-full h-11 mt-4 font-bold border-none hover:opacity-90 transition-opacity"
             disabled={isLoading}
             style={{
               backgroundColor: finalTextColor,

@@ -48,19 +48,19 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-                <AuthProvider>
-                  <div className="relative min-h-screen flex flex-col">
-                    <GlobalNav/>
-                    
-                    {/* Main Content */}
-                    <main className="flex-1 w-full h-full">
-                      {children}
-                    </main>
-                  </div>
-                </AuthProvider>
+              <AuthProvider>
+                <div className="relative min-h-screen flex flex-col">
+                  <GlobalNav />
+
+                  {/* Main Content */}
+                  <main className="flex-1 w-full h-full">
+                    {children}
+                  </main>
+                </div>
+              </AuthProvider>
             </ThemeProvider>
           </MousePositionProvider>
-          <ScreenGuard /> 
+          <ScreenGuard />
         </MotionProvider>
       </body>
     </html>
