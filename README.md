@@ -12,7 +12,7 @@
 Welcome to **La Claire Ligña**, a premium alternative to messy spreadsheet accounting. Built specifically for private lenders and small lending businesses, this application acts as your central financial hub. Manage high-level capital funds and track granular loan disbursements, all backed by a reversible double-entry ledger that guarantees mathematical perfection down to the final cent.
 
 ## Why La Claire Ligña?
----
+
 - **Immutable Financial Integrity**: Forget broken spreadsheet formulas. Every loan, payment, and deletion is written securely into an append-tracking ledger (deposits, disbursements, repayments), guaranteeing your "Cash on Hand" perfectly matches reality.
 - **Automated Amortization**: Provide a principal, flat interest rate, and duration, and the system instantly maps out bi-monthly schedule payments bridging the entire loan lifecycle.
 - **Fluid & Modern UX**: Built with Shadcn UI, pure CSS animations, and Three.js 60FPS fluid backgrounds, the entire application feels like a native mobile app, functioning beautifully in both Light and Dark modes.
@@ -21,7 +21,7 @@ Welcome to **La Claire Ligña**, a premium alternative to messy spreadsheet acco
 <br />
 
 ## Key Features
----
+
 *   **Multi-Fund Management:** Segment your capital. Move money in and out of discrete funds.
 *   **Dual-Sided Balances:** Watch your active cash-on-hand deplete as you distribute loans, and refill as borrowers submit payments.
 *   **Intelligent Schedule Grids:** Visual dashboards reveal exactly how much is expected on upcoming 15th and end-of-month cycles.
@@ -31,7 +31,7 @@ Welcome to **La Claire Ligña**, a premium alternative to messy spreadsheet acco
 <br />
 
 ## Self-Hosting Guide
----
+
 Deploying your own instance of La Claire Ligña is intentionally straightforward. 
 
 **Note: By downloading and hosting this software, you agree to the terms laid out in the LICENSE file.**
