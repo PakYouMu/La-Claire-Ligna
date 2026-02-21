@@ -3,7 +3,7 @@
 // ==========================================
 export type AppRole = 'superuser' | 'admin';
 export type TransactionCategory = 'CAPITAL_DEPOSIT' | 'LOAN_DISBURSEMENT' | 'LOAN_REPAYMENT';
-export type LoanStatus = 'ACTIVE' | 'PAID';
+export type LoanStatus = 'ACTIVE' | 'PAID' | 'VOIDED';
 
 // ==========================================
 // VIEW INTERFACES (For fetching/displaying data)
@@ -22,7 +22,7 @@ export interface LoanSummary {
   interest_rate: number;     // Raw rate
   duration_months: number;   // Raw duration
   start_date: string;
-  
+
   // Calculated Fields (from View)
   total_interest: number;
   total_due: number;
@@ -30,6 +30,8 @@ export interface LoanSummary {
   total_paid: number;
   remaining_balance: number;
   status: LoanStatus;
+  is_void: boolean;
+  void_reason: string | null;
 }
 
 /** 
@@ -68,7 +70,7 @@ export interface LedgerEntry {
   category: TransactionCategory;
   notes?: string;
   created_at: string;
-  transaction_date?: string; 
+  transaction_date?: string;
   loan_id?: string;
   payment_id?: string;
 }

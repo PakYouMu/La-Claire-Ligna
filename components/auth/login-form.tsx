@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function LoginForm({
   className,
@@ -33,9 +34,13 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
+
+      toast.success("Successfully logged in");
       router.push("/funds");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      const message = error instanceof Error ? error.message : "An error occurred";
+      setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +49,7 @@ export function LoginForm({
   return (
     <div className={cn("flex flex-col gap-4", className)} {...props}>
       <div className="flex flex-col text-center">
-        <p 
+        <p
           className="text-xl font-serif"
           style={{ color: textColor }}
         >
@@ -55,8 +60,8 @@ export function LoginForm({
       <form onSubmit={handleLogin}>
         <div className="flex flex-col gap-4">
           <div className="grid gap-2">
-            <Label 
-              htmlFor="email" 
+            <Label
+              htmlFor="email"
               className="font-semibold"
               style={{ color: textColor }}
             >
@@ -76,11 +81,11 @@ export function LoginForm({
               }}
             />
           </div>
-          
+
           <div className="grid gap-2">
             <div className="flex items-center">
-              <Label 
-                htmlFor="password" 
+              <Label
+                htmlFor="password"
                 className="font-semibold"
                 style={{ color: textColor }}
               >
@@ -107,9 +112,9 @@ export function LoginForm({
               }}
             />
           </div>
-          
+
           {error && (
-            <div 
+            <div
               className="text-sm p-3 rounded-md font-bold"
               style={{
                 backgroundColor: 'rgba(255, 0, 0, 0.15)',
@@ -121,9 +126,9 @@ export function LoginForm({
             </div>
           )}
 
-          <Button 
-            type="submit" 
-            className="w-full h-11 mt-4 font-bold border-none hover:opacity-90 transition-opacity" 
+          <Button
+            type="submit"
+            className="w-full h-11 mt-4 font-bold border-none hover:opacity-90 transition-opacity"
             disabled={isLoading}
             style={{
               backgroundColor: textColor,
@@ -135,7 +140,7 @@ export function LoginForm({
             ) : "Login"}
           </Button>
         </div>
-        <div 
+        <div
           className="mt-6 text-center text-sm"
           style={{ color: textColor }}
         >

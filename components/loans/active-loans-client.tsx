@@ -1,29 +1,28 @@
 "use client";
 
-import { 
+import {
   useState,
-  useMemo 
+  useMemo
 } from "react";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { PaymentDialog } from "../dashboard/modals/payment-dialog";
 import { CreateLoanModal } from "../dashboard/modals/create-loan-modal";
 import { SignaturePreview } from "../dashboard/modals/signature-modal";
-import { LoanSummary } from "@/lib/types/schema"; 
+import { LoanSummary } from "@/lib/types/schema";
 import {
   CalendarClock,
   Banknote,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { EditLoanModal } from "../dashboard/modals/edit-loan-modal";
-import { DeleteLoanModal } from "../dashboard/modals/delete-loan-modal";
+import { ActionMenu } from "./action-menu";
 
 export type EnrichedLoan = LoanSummary & {
   next_due_date: string | null;
@@ -37,27 +36,27 @@ interface ActiveLoansClientProps {
 
 export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // UPDATED: 8 Items per page
-  const itemsPerPage = 8; 
-  
+  const itemsPerPage = 8;
+
   // 1. SORTING LOGIC
   const sortedData = useMemo(() => {
     // Create a shallow copy to avoid mutating props
     return [...data].sort((a, b) => {
-      const now = new Date(); 
-      now.setHours(0,0,0,0); // Normalize today
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Normalize today
 
       const aDate = a.next_due_date ? new Date(a.next_due_date) : null;
       const bDate = b.next_due_date ? new Date(b.next_due_date) : null;
 
       // --- Priority 1 & 2: Overdue First, then Earliest Due Date ---
       // (Since overdue dates are in the past, sorting by date ASC handles both)
-      
+
       // Handle nulls (Completed loans go to the bottom)
       if (aDate && !bDate) return -1;
       if (!aDate && bDate) return 1;
-      
+
       if (aDate && bDate) {
         const timeDiff = aDate.getTime() - bDate.getTime();
         if (timeDiff !== 0) return timeDiff;
@@ -71,7 +70,7 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
       // You can swap a and b here if you want Oldest first
       const aStart = new Date(a.start_date).getTime();
       const bStart = new Date(b.start_date).getTime();
-      const startDiff = bStart - aStart; 
+      const startDiff = bStart - aStart;
       if (startDiff !== 0) return startDiff;
 
       // --- Priority 5: Borrower Last Name (Alphabetical) ---
@@ -95,14 +94,14 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
 
   const getDueStatus = (dateStr: string | null) => {
     if (!dateStr) return { text: "Completed", sub: null, isOverdue: false, isDueToday: false };
-    
+
     // 1. Get Real Midnight (Start of today)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     // 2. Parse Due Date (Ensure it treats YYYY-MM-DD as Local Midnight, not UTC)
     const due = new Date(dateStr + "T00:00:00");
-    
+
     // 3. Calculate Difference
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); // Use round, not ceil
@@ -111,27 +110,27 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
     const formatted = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     if (diffDays < 0) return { text: `${formatted}`, sub: "Overdue", isOverdue: true, isDueToday: false };
-    
+
     // STRICT check for Today
     if (diffDays === 0) return { text: "Today", sub: null, isOverdue: false, isDueToday: true };
-    
+
     if (diffDays <= 3) return { text: formatted, sub: `in ${diffDays}d`, isOverdue: false, isDueToday: false };
-    
+
     return { text: formatted, sub: null, isOverdue: false, isDueToday: false };
   };
 
   return (
     <div className="flex flex-col h-full w-full bg-transparent">
-      
+
       {/* Header */}
       <div className="p-6 flex items-center justify-between border-b border-border/50 shrink-0 h-[88px]">
         <div>
           <h3 className="font-semibold text-lg text-foreground">Active Loans</h3>
           <p className="text-sm text-muted-foreground">Manage ongoing collections and balances</p>
         </div>
-        <CreateLoanModal fundId={fundId}/>
+        <CreateLoanModal fundId={fundId} />
       </div>
-      
+
       {/* Table Body */}
       <div className="flex-1 w-full">
         <Table>
@@ -144,7 +143,7 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
               <TableHead className="text-center font-semibold">Payday Due</TableHead>
               <TableHead className="text-center w-[150px] font-semibold">Balance</TableHead>
               <TableHead className="text-center font-semibold">Sign</TableHead>
-              <TableHead className="text-center font-semibold pr-6 w-[200px]">Action</TableHead>
+              <TableHead className="text-center font-semibold pr-6 w-[10px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -187,10 +186,10 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
                           </span>
                         </div>
                       </TableCell>
-                      
+
                       {/* Start Date */}
                       <TableCell className="text-center text-sm text-muted-foreground hidden md:table-cell">
-                          {new Date(loan.start_date).toLocaleDateString()}
+                        {new Date(loan.start_date).toLocaleDateString()}
                       </TableCell>
 
                       {/* Next Due */}
@@ -212,7 +211,7 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
                       <TableCell className="text-center text-muted-foreground hidden md:table-cell">
                         ₱{loan.principal.toLocaleString()}
                       </TableCell>
-                      
+
                       {/* Payday Due */}
                       <TableCell className="text-center font-medium">
                         <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted/50 border border-border/50 text-sm">
@@ -227,9 +226,9 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
                             ₱{loan.remaining_balance.toLocaleString()}
                           </span>
                           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className={`h-full transition-all duration-500 rounded-full ${dueStatus.isOverdue ? 'bg-red-500' : 'bg-green-500'}`}
-                              style={{ width: `${percentPaid}%` }} 
+                              style={{ width: `${percentPaid}%` }}
                             />
                           </div>
                         </div>
@@ -238,25 +237,16 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
                       {/* Signature */}
                       <TableCell className="text-center align-middle">
                         <div className="flex justify-center opacity-80 hover:opacity-100 transition-opacity">
-                          <SignaturePreview 
-                            url={loan.signature_url} 
-                            borrowerName={`${loan.first_name} ${loan.last_name}`} 
+                          <SignaturePreview
+                            url={loan.signature_url}
+                            borrowerName={`${loan.first_name} ${loan.last_name}`}
                           />
                         </div>
                       </TableCell>
 
                       {/* Action */}
                       <TableCell className="text-center pr-6">
-                        <div className="flex items-center justify-center gap-2">
-                          <EditLoanModal loan={loan} />
-                          <PaymentDialog 
-                            loanId={loan.id} 
-                            borrowerName={`${loan.first_name} ${loan.last_name}`}
-                            amortization={loan.amortization_per_payday}
-                            balance={loan.remaining_balance}
-                          />
-                          <DeleteLoanModal loan={loan} />
-                        </div>
+                        <ActionMenu loan={loan} />
                       </TableCell>
                     </TableRow>
                   );
@@ -277,41 +267,41 @@ export function ActiveLoansClient({ data, fundId }: ActiveLoansClientProps) {
       {/* Pagination / Footer */}
       <div className="p-4 border-t border-border/50 flex items-center justify-between bg-muted/5 mt-auto h-[72px]">
         <div className="flex gap-4 text-xs text-muted-foreground hidden md:flex">
-           <div className="flex items-center gap-1.5">
-              <span className="block w-2 h-2 rounded-full bg-green-500"></span> On Time
-           </div>
-           <div className="flex items-center gap-1.5">
-              <span className="block w-2 h-2 rounded-full bg-orange-500"></span> Due Today
-           </div>
-           <div className="flex items-center gap-1.5">
-              <span className="block w-2 h-2 rounded-full bg-red-500"></span> Overdue
-           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="block w-2 h-2 rounded-full bg-green-500"></span> On Time
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="block w-2 h-2 rounded-full bg-orange-500"></span> Due Today
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="block w-2 h-2 rounded-full bg-red-500"></span> Overdue
+          </div>
         </div>
 
         {sortedData.length > 0 && (
           <div className="flex items-center gap-4 ml-auto">
-             <span className="text-xs text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length}
-             </span>
-             <div className="flex gap-2">
-                <button
-                  onClick={handlePrev}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
-                >
-                  <ChevronLeft className="h-3 w-3" /> Previous
-                </button>
-                <button
-                  onClick={handleNext}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
-                >
-                  Next <ChevronRight className="h-3 w-3" />
-                </button>
-             </div>
+            <span className="text-xs text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePrev}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <ChevronLeft className="h-3 w-3" /> Previous
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Next <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }

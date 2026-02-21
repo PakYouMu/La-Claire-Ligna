@@ -14,8 +14,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Banknote, Loader2, Calendar, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface PaymentDialogProps {
   loanId: string;
@@ -64,7 +66,7 @@ export function PaymentDialog({ loanId, borrowerName, amortization, balance }: P
       // Find next pending payment
       const next = schedules.find(s => s.status === "PENDING");
       setNextDueDate(next || null);
-      
+
       // Get upcoming 3 pending payments for preview
       const upcoming = schedules.filter(s => s.status === "PENDING").slice(0, 3);
       setUpcomingSchedule(upcoming);
@@ -73,7 +75,7 @@ export function PaymentDialog({ loanId, borrowerName, amortization, balance }: P
 
   async function handleSubmit() {
     setIsLoading(true);
-    
+
     const formData = new FormData();
     formData.append("loan_id", loanId);
     formData.append("amount", amount);
@@ -81,12 +83,13 @@ export function PaymentDialog({ loanId, borrowerName, amortization, balance }: P
     if (notes) {
       formData.append("notes", notes);
     }
-    
+
     try {
       await recordPayment(formData);
+      toast.success(`Successfully recorded payment of ₱${Number(amount).toLocaleString()}`);
       setOpen(false);
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || "Failed to record payment");
     } finally {
       setIsLoading(false);
     }
@@ -99,16 +102,16 @@ export function PaymentDialog({ loanId, borrowerName, amortization, balance }: P
     today.setHours(0, 0, 0, 0);
     const dueDate = new Date(date);
     dueDate.setHours(0, 0, 0, 0);
-    
+
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    const formatted = date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+
+    const formatted = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
-    
+
     if (diffDays < 0) {
       return { text: formatted, status: 'OVERDUE', color: 'text-red-600 font-semibold' };
     } else if (diffDays === 0) {
@@ -123,10 +126,10 @@ export function PaymentDialog({ loanId, borrowerName, amortization, balance }: P
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
-          <Banknote className="h-4 w-4" />
-          Pay
-        </Button>
+        <button className="css-anchor-menu-item">
+          <Banknote className="h-4 w-4 text-emerald-500" />
+          <span>Record Payment</span>
+        </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
@@ -217,22 +220,23 @@ export function PaymentDialog({ loanId, borrowerName, amortization, balance }: P
               required
             />
           </div>
-          
+
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes (Optional)</Label>
-            <Input 
-              id="notes" 
-              name="notes" 
+            <Textarea
+              id="notes"
+              name="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. GCash, Cash, Payment #1" 
+              placeholder="e.g. GCash, Cash, Payment #1"
+              className="resize-none"
             />
           </div>
 
           <DialogFooter>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isLoading || !amount || parseFloat(amount) <= 0} 
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading || !amount || parseFloat(amount) <= 0}
               className="w-full"
             >
               {isLoading ? (

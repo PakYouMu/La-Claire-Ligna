@@ -35,11 +35,8 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  useEffect(() => {
-    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
-  }, [isMenuOpen]);
-
   const handleToggleMenu = () => {
+    if (isClosing) return; // Prevent spamming toggle while closing animation plays
     if (isMenuOpen) {
       handleClose();
     } else {
@@ -55,8 +52,31 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
     }, 300);
   };
 
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
+
+    // Global listener for Escape to toggle the menu (open or close)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleToggleMenu();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen, isClosing]);
+
   const handleWrapperClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('a, button')) {
+      handleClose();
+    }
+  };
+
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
       handleClose();
     }
   };
@@ -168,8 +188,11 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
       </div>
 
       {isMenuOpen && (
-        <div className={`nav-mobile-overlay ${isClosing ? 'closing' : ''}`}>
-          <div className="nav-layer-center">
+        <div
+          className={`nav-mobile-overlay ${isClosing ? 'closing' : ''}`}
+          onClick={handleBackgroundClick}
+        >
+          <div className="nav-layer-center" onClick={handleBackgroundClick}>
             <div className="nav-content-width" onClick={handleWrapperClick}>
               {navItems && (
                 <div className="nav-links-wrapper animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -179,15 +202,26 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
             </div>
           </div>
 
-          <div className="nav-layer-flow">
-            <div className="nav-spacer-fill" />
-            <div className="nav-preferences-container">
+          <div className="nav-layer-flow" onClick={handleBackgroundClick}>
+            <div className="nav-spacer-fill" onClick={handleBackgroundClick} />
+            <div className="nav-preferences-container" onClick={handleBackgroundClick}>
               <div className="nav-content-width space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                 <div className="nav-preference-label-center">Preferences</div>
                 <div className="nav-preferences-grid">
 
                   {/* APPEARANCE ROW */}
-                  <div className="nav-preference-row-thin nav-btn-half" onClick={handleThemeRowClick}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="nav-preference-row-thin nav-btn-half"
+                    onClick={handleThemeRowClick}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleThemeRowClick(e as any);
+                      }
+                    }}
+                  >
                     <span className="font-medium text-sm">Appearance</span>
                     <div
                       className="scale-90 transition-transform hover:scale-95"
@@ -198,7 +232,18 @@ export default function NavOverlay({ navItems }: NavOverlayProps) {
                   </div>
 
                   {/* ANIMATIONS ROW */}
-                  <div className="nav-preference-row-thin nav-btn-half" onClick={toggleMotion}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="nav-preference-row-thin nav-btn-half"
+                    onClick={toggleMotion}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleMotion();
+                      }
+                    }}
+                  >
                     <span className="font-medium text-sm">Animations</span>
                     <div
                       className="scale-90 transition-transform hover:scale-95"

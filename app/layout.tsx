@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/wrappers/auth-wrapper";
 import { ScreenGuard } from "@/components/wrappers/screen-wrapper";
 import { MotionProvider } from "@/components/context/motion-context";
 import MousePositionProvider from "@/components/wrappers/mouse-position-wrapper";
+import { Toaster } from "@/components/ui/sonner";
 
 
 const defaultUrl = process.env.VERCEL_URL
@@ -56,6 +57,7 @@ export default function RootLayout({
                   <main className="flex-1 w-full h-full">
                     {children}
                   </main>
+                  <Toaster position="top-center" />
                 </div>
               </AuthProvider>
             </ThemeProvider>

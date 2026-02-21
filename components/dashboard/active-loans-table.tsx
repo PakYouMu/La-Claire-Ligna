@@ -24,9 +24,12 @@ export async function ActiveLoansTable({ fundId }: ActiveLoansTableProps) {
     query = query.eq("fund_id", fundId);
   }
 
-  const { data: loans, error } = await query;
+  const [loansRes, voidStatusRes] = await Promise.all([
+    query,
+    supabase.from("loans").select("id, is_void").eq("fund_id", fundId)
+  ]);
 
-  if (error || !loans) {
+  if (loansRes.error) {
     return (
       <div className="flex h-full items-center justify-center text-destructive">
         <AlertCircle className="mr-2 h-5 w-5" />
@@ -34,6 +37,10 @@ export async function ActiveLoansTable({ fundId }: ActiveLoansTableProps) {
       </div>
     );
   }
+
+  const rawLoans = loansRes.data || [];
+  const voidMaps = new Map((voidStatusRes.data || []).map(l => [l.id, l.is_void]));
+  const loans = rawLoans.filter(l => !voidMaps.get(l.id));
 
   // 3. Fetch Details (Schedule & Signatures) in parallel
   const loanIds = loans.map(l => l.id);
@@ -78,6 +85,8 @@ export async function ActiveLoansTable({ fundId }: ActiveLoansTableProps) {
     ...loan,
     next_due_date: nextDueDateMap.get(loan.id) || null,
     signature_url: signatureMap.get(loan.borrower_id) || null,
+    is_void: false,
+    void_reason: null,
   }));
 
   // 5. Pass to Client Component

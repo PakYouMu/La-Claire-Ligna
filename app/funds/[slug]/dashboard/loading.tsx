@@ -7,8 +7,7 @@ export default function DashboardLoading() {
     return (
         <div className="w-full min-h-[100dvh] flex flex-col pt-16 md:pt-[123px]">
             <div className="w-full flex-1 flex flex-col">
-                {/* Adjust translate-y-[-20px] below to move the grid up or down */}
-                <div className="w-full my-auto translate-y-[-40px]">
+                <div className="w-full my-auto translate-y-[-30px]">
                     <div className="h-full w-full max-w-[90rem] mx-auto p-responsive relative flex flex-col gap-responsive pb-20">
                         {/* Unified grid identical to MagicBento/DashboardGrid */}
                         <div className="card-grid gap-responsive grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">

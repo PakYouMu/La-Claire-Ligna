@@ -21,7 +21,7 @@ export interface BentoProps {
   magnetStrength?: number;
 }
 
-export interface BentoCardProps {
+export interface BentoCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   title?: string;
@@ -57,8 +57,8 @@ const createParticleElement = (x: number, y: number, color: string): HTMLDivElem
 };
 
 const calculateSpotlightValues = (radius: number) => ({
-  proximity: radius * 0.5,
-  fadeDistance: radius * 0.75
+  proximity: radius * 0.4,
+  fadeDistance: radius * 2.5
 });
 
 const updateCardGlowProperties = (card: HTMLElement, mouseX: number, mouseY: number, glow: number, radius: number) => {
@@ -113,28 +113,7 @@ const GlobalSpotlight: React.FC<{
     const handleMouseMove = (e: MouseEvent) => {
       if (!spotlightRef.current || !gridRef.current) return;
 
-      const section = gridRef.current.closest('.bento-section');
-      const rect = section?.getBoundingClientRect();
-      const mouseInside = rect &&
-        e.clientX >= rect.left &&
-        e.clientX <= rect.right &&
-        e.clientY >= rect.top &&
-        e.clientY <= rect.bottom;
-
-      isInsideSection.current = mouseInside || false;
       const cards = gridRef.current.querySelectorAll('.magic-bento-card');
-
-      if (!mouseInside) {
-        gsap.to(spotlightRef.current, {
-          opacity: 0,
-          duration: 0.3,
-          ease: 'power2.out'
-        });
-        cards.forEach(card => {
-          (card as HTMLElement).style.setProperty('--glow-intensity', '0');
-        });
-        return;
-      }
 
       const { proximity, fadeDistance } = calculateSpotlightValues(radius);
       let minDistance = Infinity;
@@ -215,7 +194,8 @@ export const BentoCard: React.FC<BentoCardProps> = ({
   config,
   tiltIntensity,
   magnetStrength,
-  noPadding = false
+  noPadding = false,
+  ...props
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const particlesRef = useRef<HTMLDivElement[]>([]);
@@ -438,7 +418,8 @@ export const BentoCard: React.FC<BentoCardProps> = ({
     <div
       ref={cardRef}
       className={`magic-bento-card magic-bento-card--border-glow particle-container ${className || ''}`}
-      style={{ '--glow-color': glowColor, position: 'relative', overflow: 'hidden' } as any}
+      style={{ '--glow-color': glowColor, position: 'relative', overflow: 'hidden' } as React.CSSProperties}
+      {...props}
     >
       <div className={contentClass}>
         {(title || icon) && !noPadding && (

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 
 export function SignUpForm({
   className,
@@ -44,9 +45,12 @@ export function SignUpForm({
         },
       });
       if (error) throw error;
+      toast.success("Successfully signed up! Please check your email and log in.");
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      const message = error instanceof Error ? error.message : "An error occurred";
+      setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

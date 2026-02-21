@@ -14,6 +14,7 @@ import {
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { deleteLoan } from "@/app/actions/loans";
 import { EnrichedLoan } from "@/components/loans/active-loans-client";
+import { toast } from "sonner";
 
 interface DeleteLoanModalProps {
   loan: EnrichedLoan;
@@ -26,11 +27,12 @@ export function DeleteLoanModal({ loan }: DeleteLoanModalProps) {
   const handleDelete = async () => {
     setIsLoading(true);
     const result = await deleteLoan(loan.id);
-    
+
     if (result.success) {
+      toast.success("Loan deleted successfully");
       setOpen(false);
     } else {
-      alert(result.error || "Failed to delete loan");
+      toast.error(result.error || "Failed to delete loan");
     }
     setIsLoading(false);
   };
@@ -38,12 +40,12 @@ export function DeleteLoanModal({ loan }: DeleteLoanModalProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-muted hover:bg-red-600 text-foreground hover:text-white h-9 px-4 text-sm font-medium transition-colors flex items-center gap-2">
+        <button className="css-anchor-menu-item text-red-600 hover:text-red-700 hover:bg-red-500/10">
           <Trash2 className="h-4 w-4" />
-          Delete
-        </Button>
+          <span>Delete Loan</span>
+        </button>
       </DialogTrigger>
-      
+
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <div className="flex items-center gap-2 text-red-600 mb-2">
@@ -65,9 +67,9 @@ export function DeleteLoanModal({ loan }: DeleteLoanModalProps) {
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
             Cancel
           </Button>
-          <Button 
-            variant="destructive" 
-            onClick={handleDelete} 
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
             disabled={isLoading}
             className="bg-red-600 hover:bg-red-700"
           >

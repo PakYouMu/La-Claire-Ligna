@@ -11,17 +11,19 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { 
+import {
   Pencil,
   Loader2,
   AlertTriangle,
   CheckCircle2,
   Calendar,
-  Banknote } from "lucide-react";
+  Banknote
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateLoan } from "@/app/actions/loans";
 import { EnrichedLoan } from "@/components/loans/active-loans-client";
+import { toast } from "sonner";
 
 interface EditLoanModalProps {
   loan: EnrichedLoan;
@@ -43,19 +45,22 @@ export function EditLoanModal({ loan }: EditLoanModalProps) {
     setSuccess(false);
 
     const formData = new FormData(e.currentTarget);
-    
+
     // Call server action
     const result = await updateLoan(loan.id, formData);
 
     if (result.success) {
       setSuccess(true);
+      toast.success("Loan updated successfully!");
       // Close modal automatically after a brief success message
       setTimeout(() => {
         setOpen(false);
         setSuccess(false);
       }, 1500);
     } else {
-      setError(result.error || "Failed to update loan");
+      const errorMsg = result.error || "Failed to update loan";
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
     setIsLoading(false);
   };
@@ -69,12 +74,12 @@ export function EditLoanModal({ loan }: EditLoanModalProps) {
       }
     }}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 text-sm font-medium transition-colors flex items-center gap-2">
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Button>
+        <button className="css-anchor-menu-item">
+          <Pencil className="h-4 w-4 text-blue-500" />
+          <span>Edit Loan</span>
+        </button>
       </DialogTrigger>
-      
+
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Loan Details</DialogTitle>
@@ -96,7 +101,7 @@ export function EditLoanModal({ loan }: EditLoanModalProps) {
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              
+
               {/* Warning / Info Box (Styled like the Payment Modal Highlight) */}
               <div className="p-4 border-2 border-amber-200 bg-amber-50 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
@@ -119,7 +124,7 @@ export function EditLoanModal({ loan }: EditLoanModalProps) {
               {/* Principal Input */}
               <div className="grid gap-2">
                 <Label htmlFor="principal" className="flex items-center gap-2">
-                  <Banknote className="h-3.5 w-3.5 text-muted-foreground" /> 
+                  <Banknote className="h-3.5 w-3.5 text-muted-foreground" />
                   Principal Amount
                 </Label>
                 <Input
@@ -132,7 +137,7 @@ export function EditLoanModal({ loan }: EditLoanModalProps) {
                   required
                 />
               </div>
-              
+
               {/* Interest & Duration Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
@@ -161,7 +166,7 @@ export function EditLoanModal({ loan }: EditLoanModalProps) {
                   />
                 </div>
               </div>
-              
+
               {/* Start Date Input */}
               <div className="grid gap-2">
                 <Label htmlFor="start_date" className="flex items-center gap-2">

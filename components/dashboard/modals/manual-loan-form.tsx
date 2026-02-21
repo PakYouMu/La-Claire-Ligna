@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Camera } from "lucide-react";
+import { toast } from "sonner";
 
 interface ManualLoanFormProps {
   fundId: string; // <--- ADDED PROP
@@ -30,23 +31,24 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
 
     const payload = new FormData();
     // 1. Append Fund ID
-    payload.append("fund_id", fundId); 
-    
+    payload.append("fund_id", fundId);
+
     payload.append("name", formData.name);
     payload.append("amount", formData.amount);
     payload.append("months", formData.months);
     payload.append("interest_rate", formData.interest_rate);
     payload.append("start_date", formData.start_date);
-    
+
     if (signatureBlob) {
       payload.append("signature", signatureBlob, "signature.png");
     }
 
     try {
       await createFullLoan(payload);
+      toast.success("Loan and borrower successfully created!");
       onSuccess();
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || "Failed to create loan");
     } finally {
       setIsProcessing(false);
     }
@@ -57,19 +59,19 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
       <div className="grid gap-3" style={{ gridTemplateColumns: '2fr 1.5fr' }}>
         <div className="grid gap-1.5">
           <Label className="text-sm">Borrower Name</Label>
-          <Input 
-            value={formData.name} 
-            onChange={e => setFormData({...formData, name: e.target.value})}
+          <Input
+            value={formData.name}
+            onChange={e => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter borrower name"
             className="h-9"
           />
         </div>
         <div className="grid gap-1.5">
           <Label className="text-sm">Start Date</Label>
-          <Input 
+          <Input
             type="date"
-            value={formData.start_date} 
-            onChange={e => setFormData({...formData, start_date: e.target.value})}
+            value={formData.start_date}
+            onChange={e => setFormData({ ...formData, start_date: e.target.value })}
             className="h-9 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-9 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
         </div>
@@ -77,10 +79,10 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
       <div className="grid gap-3" style={{ gridTemplateColumns: '0.5fr 0.5fr 0.5fr' }}>
         <div className="grid gap-1.5">
           <Label className="text-sm">Principal (₱)</Label>
-          <Input 
-            type="number" 
-            value={formData.amount} 
-            onChange={e => setFormData({...formData, amount: e.target.value})}
+          <Input
+            type="number"
+            value={formData.amount}
+            onChange={e => setFormData({ ...formData, amount: e.target.value })}
             placeholder="0.00"
             step="0.01"
             className="h-9"
@@ -88,20 +90,20 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
         </div>
         <div className="grid gap-1.5">
           <Label className="text-sm">Terms (Months)</Label>
-          <Input 
-            type="number" 
-            value={formData.months} 
-            onChange={e => setFormData({...formData, months: e.target.value})}
+          <Input
+            type="number"
+            value={formData.months}
+            onChange={e => setFormData({ ...formData, months: e.target.value })}
             placeholder="12"
             className="h-9"
           />
         </div>
         <div className="grid gap-1.5">
           <Label className="text-sm">Interest (%)</Label>
-          <Input 
-            type="number" 
-            value={formData.interest_rate} 
-            onChange={e => setFormData({...formData, interest_rate: e.target.value})}
+          <Input
+            type="number"
+            value={formData.interest_rate}
+            onChange={e => setFormData({ ...formData, interest_rate: e.target.value })}
             placeholder="7"
             step="0.1"
             className="h-9"
@@ -111,8 +113,8 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
 
       <div className="grid gap-1.5">
         <Label className="text-sm">Signature Image</Label>
-        <Input 
-          type="file" 
+        <Input
+          type="file"
           accept="image/*"
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
@@ -123,19 +125,19 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
         />
         {signatureBlob && (
           <div className="p-2 border rounded bg-muted/20">
-            <img 
-              src={URL.createObjectURL(signatureBlob)} 
-              alt="Signature Preview" 
-              className="h-14 w-auto object-contain border bg-white rounded" 
+            <img
+              src={URL.createObjectURL(signatureBlob)}
+              alt="Signature Preview"
+              className="h-14 w-auto object-contain border bg-white rounded"
             />
           </div>
         )}
       </div>
 
       <div className="flex items-center justify-center py-3 border-t border-b">
-        <Button 
+        <Button
           type="button"
-          variant="outline" 
+          variant="outline"
           onClick={onSwitchToScan}
           className="gap-2 h-9"
           size="sm"
@@ -146,17 +148,17 @@ export function ManualLoanForm({ fundId, onSuccess, onCancel, onSwitchToScan }: 
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={onCancel}
           size="sm"
           className="h-9"
         >
           Cancel
         </Button>
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           disabled={isProcessing || !formData.name || !formData.amount || !formData.months}
           size="sm"
           className="h-9"

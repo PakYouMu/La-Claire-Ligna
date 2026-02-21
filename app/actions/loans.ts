@@ -13,7 +13,7 @@ export async function createFullLoan(formData: FormData) {
   const interest = parseFloat(formData.get("interest_rate") as string);
   const duration = parseInt(formData.get("months") as string); // Form sends "months"
   const startDate = formData.get("start_date") as string;
-  
+
   // Handle Signature (File)
   const signatureFile = formData.get("signature") as File | null;
 
@@ -29,7 +29,7 @@ export async function createFullLoan(formData: FormData) {
   if (nameParts.length > 1) {
     // "Michael Ayuban" -> First: "Michael", Last: "Ayuban"
     // "Juan De La Cruz" -> First: "Juan De La", Last: "Cruz"
-    lastName = nameParts.pop() || ""; 
+    lastName = nameParts.pop() || "";
     firstName = nameParts.join(" ");
   } else {
     // "Cher" -> First: "Cher", Last: "." (or empty string if DB allows)
@@ -149,5 +149,32 @@ export async function deleteLoan(loanId: string) {
   }
 
   revalidatePath("/funds/[slug]/loans", "page");
+  return { success: true };
+}
+
+export async function voidLoan(loanId: string, reason: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("loans")
+    .update({
+      is_void: true,
+      void_reason: reason
+    })
+    .eq("id", loanId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  // Eagerly purge all pending schedules to forcefully drop the loan out of active tracking metrics
+  await supabase
+    .from("payment_schedule")
+    .delete()
+    .eq("loan_id", loanId)
+    .eq("status", "PENDING");
+
+  revalidatePath("/funds/[slug]/loans", "page");
+  revalidatePath("/funds/[slug]/borrowers", "page");
   return { success: true };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FileSignature, Calendar, User, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileSignature, Calendar, User, Clock, ChevronLeft, ChevronRight, Ban } from "lucide-react";
 
 type Borrower = {
   id: string;
@@ -11,12 +11,13 @@ type Borrower = {
   signature_url: string | null;
   has_active_loan: boolean;
   next_due_date: string | null;
+  is_voided?: boolean;
 };
 
 export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
   const [showAll, setShowAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // UPDATED: Set to 6 items per page
   const itemsPerPage = 6;
 
@@ -63,7 +64,7 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const due = new Date(dateStr);
-    return due < today; 
+    return due < today;
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -77,7 +78,7 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
 
   return (
     <div className="w-full flex flex-col h-full bg-transparent">
-      
+
       {/* Header */}
       <div className="p-6 flex items-center justify-between border-b border-border/50 shrink-0 h-[88px]">
         <div>
@@ -100,9 +101,9 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
 
       {/* List Content */}
       <div className="flex-1 p-6 space-y-3">
-        {currentData.length === 0 && totalPages === 0 ? (
-           // Absolute empty state (no data at all)
-           <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 border-2 border-dashed border-border/50 rounded-xl">
+        {currentData.length === 0 ? (
+          // Absolute empty state (no data at all)
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 border-2 border-dashed border-border/50 rounded-xl">
             <User className="h-12 w-12 mb-4 opacity-20" />
             <p>No borrowers found.</p>
           </div>
@@ -118,9 +119,14 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
               let labelClass = "text-muted-foreground";
               let iconClass = "text-muted-foreground";
 
-              if (isOverdue) {
+              if (borrower.is_voided) {
+                cardClass += " bg-orange-500/5 border-orange-500/30 hover:bg-orange-500/10";
+                textClass = "text-orange-600 dark:text-orange-400 font-medium";
+                labelClass = "text-orange-600/60 dark:text-orange-400/60";
+                iconClass = "text-orange-500";
+              } else if (isOverdue) {
                 cardClass += " bg-red-500/5 border-red-500/30 hover:bg-red-500/10";
-                textClass = "text-red-600 dark:text-red-400 font-medium"; 
+                textClass = "text-red-600 dark:text-red-400 font-medium";
                 labelClass = "text-red-600/60 dark:text-red-400/60";
                 iconClass = "text-red-500";
               } else if (isCompleted) {
@@ -132,7 +138,7 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
 
               return (
                 <div key={borrower.id} className={cardClass}>
-                  
+
                   {/* 1. Name */}
                   <div className="col-span-1 flex flex-col justify-center z-10">
                     <div className={`text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1 font-semibold ${labelClass}`}>
@@ -162,7 +168,12 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
                       Next Due
                     </div>
                     <div className={`text-sm font-bold ${textClass}`}>
-                      {borrower.next_due_date ? (
+                      {borrower.is_voided ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 gap-1">
+                          <Ban className="h-3 w-3" />
+                          Voided
+                        </span>
+                      ) : borrower.next_due_date ? (
                         formatDate(borrower.next_due_date)
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
@@ -183,7 +194,7 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
                         href={borrower.signature_url}
                         target="_blank"
                         rel="noreferrer"
-                        className={`text-sm hover:underline font-medium cursor-pointer flex items-center gap-1 w-fit px-2 py-1 rounded-md transition-colors ${isOverdue ? 'hover:bg-red-100 dark:hover:bg-red-900/20' : 'hover:bg-primary/10'}`}
+                        className={`text-sm hover:underline font-medium cursor-pointer flex items-center gap-1 w-fit px-2 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${isOverdue ? 'hover:bg-red-100 dark:hover:bg-red-900/20' : 'hover:bg-primary/10'}`}
                       >
                         View Signed
                       </a>
@@ -197,10 +208,10 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
 
             {/* Render Ghost Rows to maintain height */}
             {emptyRows > 0 && Array.from({ length: emptyRows }).map((_, i) => (
-              <div 
-                key={`ghost-${i}`} 
+              <div
+                key={`ghost-${i}`}
                 className="w-full h-[88px] border border-transparent rounded-xl" // Invisible placeholder
-                aria-hidden="true" 
+                aria-hidden="true"
               />
             ))}
           </>
@@ -209,25 +220,25 @@ export function BorrowerDirectoryClient({ data }: { data: Borrower[] }) {
 
       {/* Pagination Controls */}
       <div className="p-4 border-t border-border/50 flex items-center justify-between bg-muted/5 mt-auto h-[72px]">
-          <span className="text-xs text-muted-foreground">
-             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, processedBorrowers.length)} of {processedBorrowers.length}
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePrev}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
-            >
-              <ChevronLeft className="h-3 w-3" /> Previous
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
-            >
-              Next <ChevronRight className="h-3 w-3" />
-            </button>
-          </div>
+        <span className="text-xs text-muted-foreground">
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, processedBorrowers.length)} of {processedBorrowers.length}
+        </span>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePrev}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <ChevronLeft className="h-3 w-3" /> Previous
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-3 py-1.5 text-xs font-medium border border-border/60 rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            Next <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
       </div>
     </div>
   );
