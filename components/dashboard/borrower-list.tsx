@@ -21,7 +21,7 @@ export async function BorrowerList({ fundId }: BorrowerListProps) {
       .eq("fund_id", fundId)
       .eq("status", "ACTIVE"),
     supabase
-      .from("loans")
+      .from("view_loan_summary")
       .select("id, borrower_id, is_void, status")
       .eq("fund_id", fundId)
   ]);
