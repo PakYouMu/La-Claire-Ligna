@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, ArrowDownToLine, ArrowUpFromLine, Settings2, Loader2, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ManageCapitalDialogProps {
   fundId: string;
@@ -42,8 +43,9 @@ export function ManageCapitalDialog({ fundId }: ManageCapitalDialogProps) {
     try {
       await manageCapital(formData);
       setOpen(false);
+      toast.success("Capital updated successfully!");
     } catch (error) {
-      alert("Failed to manage capital. Please check the amount and try again.");
+      toast.error("Failed to manage capital. Please check the amount and try again.");
     } finally {
       setIsLoading(false);
     }
