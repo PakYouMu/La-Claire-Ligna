@@ -2,8 +2,8 @@
   <h1>La Claire Ligña</h1>
   <p><strong>A beautifully engineered, mathematical loan and fund tracker for private lenders.</strong></p>
   
-  [![License: Custom FOSS](https://img.shields.io/badge/License-FOSS_with_Attribution-blue.svg)](LICENSE)
-  [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
+  [![License](https://img.shields.io/badge/License-FOSS_with_Attribution-blue.svg)](LICENSE)
+  [![Next.js](https://img.shields.io/badge/Next.js-16.1.4-black?logo=next.js)](https://nextjs.org/)
   [![Supabase](https://img.shields.io/badge/Supabase-Database-3ecf8e?logo=supabase)](https://supabase.com)
 </div>
 
