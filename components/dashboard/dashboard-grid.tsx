@@ -94,7 +94,7 @@ export function DashboardGrid({ fundId, stats, charts }: DashboardGridProps) {
         </BentoCard>
 
         {/* ROW 2: Operations */}
-        <BentoCard className="col-span-1" title="Active Borrowers" icon={<Users className="h-4 w-4" />}>
+        <BentoCard className="col-span-1" title="Active Loans" icon={<Users className="h-4 w-4" />}>
           <div className="mt-2">
             <div className="text-responsive-2xl font-bold text-foreground">{stats.activeBorrowers}</div>
             <p className="text-responsive-xs text-muted-foreground mt-1">Open loans</p>

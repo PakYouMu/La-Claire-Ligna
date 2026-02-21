@@ -138,7 +138,7 @@ export async function updateLoan(loanId: string, formData: FormData) {
 export async function deleteLoan(loanId: string) {
   const supabase = await createClient();
 
-  // Perform Soft Delete
+  // 1. Soft Delete the Loan
   const { error } = await supabase
     .from("loans")
     .update({ deleted_at: new Date().toISOString() })
@@ -148,7 +148,44 @@ export async function deleteLoan(loanId: string) {
     return { success: false, error: error.message };
   }
 
+  // 2. Hard Erase the LOAN_DISBURSEMENT ledger record to restore the initial cash on hand
+  await supabase
+    .from("ledger")
+    .delete()
+    .eq("loan_id", loanId);
+
+  // 3. Find all associated payments to undo their LOAN_REPAYMENT ledger footprints
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("loan_id", loanId);
+
+  if (payments && payments.length > 0) {
+    const paymentIds = payments.map(p => p.id);
+
+    // Hard delete the repayment ledger entries
+    await supabase
+      .from("ledger")
+      .delete()
+      .in("payment_id", paymentIds);
+
+    // Soft delete the literal payments themselves so statistics forget them
+    await supabase
+      .from("payments")
+      .update({ deleted_at: new Date().toISOString() })
+      .in("id", paymentIds);
+  }
+
+  // 4. Force kill pending schedules
+  await supabase
+    .from("payment_schedule")
+    .delete()
+    .eq("loan_id", loanId)
+    .eq("status", "PENDING");
+
+  revalidatePath("/funds/[slug]/dashboard", "page");
   revalidatePath("/funds/[slug]/loans", "page");
+  revalidatePath("/funds/[slug]/borrowers", "page");
   return { success: true };
 }
 

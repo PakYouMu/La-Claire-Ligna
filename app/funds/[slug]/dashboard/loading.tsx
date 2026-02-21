@@ -37,7 +37,7 @@ export default function DashboardLoading() {
 
                             {/* ROW 2: 4 operation cards */}
                             {[
-                                { icon: <Users className="h-4 w-4" />, title: "Active Borrowers" },
+                                { icon: <Users className="h-4 w-4" />, title: "Active Loans" },
                                 { icon: <Target className="h-4 w-4" />, title: "Collectibles" },
                                 { icon: <Activity className="h-4 w-4" />, title: "Collection Rate" },
                                 { icon: <AlertTriangle className="h-4 w-4" />, title: "Portfolio Risk (PAR30)" }
