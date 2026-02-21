@@ -35,7 +35,7 @@ Welcome to **La Claire Ligña**, a premium alternative to messy spreadsheet acco
 
 Deploying your own instance of La Claire Ligña is intentionally straightforward. 
 
-**Note: By downloading and hosting this software, you agree to the terms laid out in the LICENSE file.**
+**Note: By downloading and hosting this software, you agree to the terms laid out in the `LICENSE` file.**
 
 ### 1. Database Setup (Supabase)
 1. Create a free project on [Supabase.com](https://supabase.com).
