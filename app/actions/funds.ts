@@ -13,7 +13,7 @@ export type ActionResponse<T = any> = {
 
 export async function getUserFunds(): Promise<ActionResponse<any[]>> {
   const supabase = await createClient();
-  
+
   // 1. Safe Auth Check
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -29,9 +29,9 @@ export async function getUserFunds(): Promise<ActionResponse<any[]>> {
       .single();
 
     if (profileError) {
-      return { 
-        success: false, 
-        error: `Profile Error (${profileError.code}): ${profileError.message}` 
+      return {
+        success: false,
+        error: `Profile Error (${profileError.code}): ${profileError.message}`
       };
     }
 
@@ -40,13 +40,13 @@ export async function getUserFunds(): Promise<ActionResponse<any[]>> {
     // 3. Fetch Funds
     const { data: funds, error: fundsError } = await supabase
       .from("funds")
-      .select("id, name, slug, currency, role:fund_members(role)") 
+      .select("id, name, slug, currency, role:fund_members(role)")
       .order("created_at", { ascending: true });
 
     if (fundsError) {
-      return { 
-        success: false, 
-        error: `Profile Error (${fundsError.code}): ${fundsError.message}` 
+      return {
+        success: false,
+        error: `Profile Error (${fundsError.code}): ${fundsError.message}`
       };
     }
 
@@ -65,11 +65,11 @@ export async function getUserFunds(): Promise<ActionResponse<any[]>> {
 
 export async function getFundBySlug(slug: string): Promise<ActionResponse<any>> {
   const supabase = await createClient();
-  
+
   try {
     const { data, error } = await supabase
       .from("funds")
-      .select("*")
+      .select("id, slug")
       .eq("slug", slug)
       .single();
 
@@ -109,7 +109,7 @@ export async function createFund(formData: FormData): Promise<ActionResponse> {
       if (error.code === '23505') return { success: false, error: "Name already taken" };
       return { success: false, error: error.message };
     }
-    
+
     successSlug = data.slug;
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -117,7 +117,7 @@ export async function createFund(formData: FormData): Promise<ActionResponse> {
 
   // Success path
   revalidatePath("/funds");
-  
+
   // NOTE: Redirects inside Server Actions are tricky. 
   // Ideally, return success and let the client redirect.
   // But if you must redirect here, do it OUTSIDE the try/catch.

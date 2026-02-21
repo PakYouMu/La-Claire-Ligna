@@ -23,10 +23,15 @@ export default async function LoansPage({ params }: PageProps) {
   const fund = result.data;
 
   return (
-    <div className="w-full pt-16 md:pt-[123px]">
-      <LoansBentoWrapper>
-        <ActiveLoansTable fundId={fund.id} />
-      </LoansBentoWrapper>
+    <div className="w-full min-h-[100dvh] flex flex-col pt-16 md:pt-[123px]">
+      <div className="w-full flex-1 flex flex-col">
+        {/* Adjust translate-y-[-20px] below to move the grid up or down */}
+        <div className="w-full my-auto translate-y-[-40px]">
+          <LoansBentoWrapper>
+            <ActiveLoansTable fundId={fund.id} />
+          </LoansBentoWrapper>
+        </div>
+      </div>
     </div>
   );
 }

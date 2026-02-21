@@ -2,7 +2,12 @@
 
 import { createContext } from 'react';
 
-export const MousePositionContext = createContext<{ x: number | null; y: number | null }>({
-  x: null,
-  y: null,
+export interface MousePositionStore {
+  subscribe: (listener: () => void) => () => void;
+  getSnapshot: () => { x: number | null; y: number | null };
+}
+
+export const MousePositionContext = createContext<MousePositionStore>({
+  subscribe: () => () => { },
+  getSnapshot: () => ({ x: null, y: null }),
 });

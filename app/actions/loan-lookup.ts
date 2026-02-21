@@ -81,7 +81,7 @@ export async function lookupBorrowerData(fullName: string) {
   // 5. Fetch Loans
   const { data: loans, error: lError } = await supabase
     .from("view_loan_summary")
-    .select("*")
+    .select("id, principal, total_due, total_paid, remaining_balance, status, start_date, duration_months")
     .eq("borrower_id", borrower.id)
     .order("start_date", { ascending: false });
 

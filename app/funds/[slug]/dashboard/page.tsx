@@ -16,7 +16,7 @@ export default async function DashboardPage({
   if (!user) redirect("/auth/login");
 
   // 2. Resolve Slug -> Fund (With Error Handling)
-   const fundResult = await getFundBySlug(slug);
+  const fundResult = await getFundBySlug(slug);
 
   // 2. Check for failure
   if (!fundResult.success || !fundResult.data) {
@@ -36,7 +36,7 @@ export default async function DashboardPage({
     }
   }
 
-  // --- DATA FETCHING (Scoped to Fund) ---
+  // --- DATA FETCHING (Scoped to Fund, Parallelized) ---
   const fundId = fund.id;
   const isGeneralView = slug === 'general-fund';
 
@@ -50,37 +50,43 @@ export default async function DashboardPage({
     return data || [];
   };
 
-  // A. Wallet Balance
+  // Build all queries (scoped to exact columns needed)
   let walletQuery = supabase.from("view_wallet_balance").select("cash_on_hand");
   if (!isGeneralView) walletQuery = walletQuery.eq("fund_id", fundId);
-  const walletRes = await walletQuery; 
-  const cashOnHand = isGeneralView 
-    ? (walletRes.data || []).reduce((sum, row) => sum + (row.cash_on_hand || 0), 0)
-    : (walletRes.data?.[0]?.cash_on_hand || 0);
 
-  // B. Loans
-  let loanQuery = supabase.from("view_loan_summary").select("*");
+  let loanQuery = supabase.from("view_loan_summary")
+    .select("id, borrower_id, status, principal, interest_rate, total_interest, total_due, total_paid, remaining_balance, amortization_per_payday, start_date");
   if (!isGeneralView) loanQuery = loanQuery.eq("fund_id", fundId);
-  const loans = await safeFetch(loanQuery);
 
-  // C. Schedule
-  let scheduleQuery = supabase.from("payment_schedule").select("*, loans!inner(fund_id)");
+  let scheduleQuery = supabase.from("payment_schedule")
+    .select("*, loans!inner(fund_id)");
   if (!isGeneralView) scheduleQuery = scheduleQuery.eq("loans.fund_id", fundId);
-  const schedules = await safeFetch(scheduleQuery);
 
-  // D. Ledger
-  let ledgerQuery = supabase.from("ledger").select("*").order("transaction_date", { ascending: true });
+  let ledgerQuery = supabase.from("ledger")
+    .select("amount, category, notes, transaction_date, created_at")
+    .order("transaction_date", { ascending: true });
   if (!isGeneralView) ledgerQuery = ledgerQuery.eq("fund_id", fundId);
-  const ledger = await safeFetch(ledgerQuery);
+
+  // Execute all queries in parallel
+  const [walletRes, loans, schedules, ledger] = await Promise.all([
+    walletQuery,
+    safeFetch(loanQuery),
+    safeFetch(scheduleQuery),
+    safeFetch(ledgerQuery),
+  ]);
+
+  const cashOnHand = isGeneralView
+    ? (walletRes.data || []).reduce((sum: number, row: any) => sum + (row.cash_on_hand || 0), 0)
+    : (walletRes.data?.[0]?.cash_on_hand || 0);
 
 
   // --- CALCULATIONS ---
   // (Your existing calculation logic remains exactly the same below)
-  
+
   const activeLoans = loans.filter((l: any) => l.status === "ACTIVE");
   const totalReceivables = activeLoans.reduce((sum: number, l: any) => sum + l.remaining_balance, 0);
   const totalEquity = cashOnHand + totalReceivables;
-  
+
   const netProfit = loans.reduce((sum: number, l: any) => {
     const interestRatio = l.total_due > 0 ? l.total_interest / l.total_due : 0;
     return sum + (l.total_paid * interestRatio);
@@ -103,21 +109,21 @@ export default async function DashboardPage({
   });
 
   const totalBadDebt = loans.filter((l: any) => (loanDaysLateMap.get(l.id) || 0) > 90)
-                            .reduce((sum: number, l: any) => sum + l.remaining_balance, 0);
+    .reduce((sum: number, l: any) => sum + l.remaining_balance, 0);
 
   const par30Amount = loans.filter((l: any) => (loanDaysLateMap.get(l.id) || 0) > 30)
-                           .reduce((sum: number, l: any) => sum + l.remaining_balance, 0);
+    .reduce((sum: number, l: any) => sum + l.remaining_balance, 0);
   const parMetric = totalReceivables > 0 ? (par30Amount / totalReceivables) * 100 : 0;
 
   const currentMonthPrefix = todayStr.substring(0, 7);
   const dueThisMonth = schedules.filter((s: any) => s.due_date.startsWith(currentMonthPrefix))
-                                .reduce((sum: number, s: any) => sum + s.expected_amount, 0);
+    .reduce((sum: number, s: any) => sum + s.expected_amount, 0);
   const paidThisMonth = schedules.filter((s: any) => s.status === 'PAID' && s.paid_date?.startsWith(currentMonthPrefix))
-                                 .reduce((sum: number, s: any) => sum + (s.paid_amount || 0), 0);
+    .reduce((sum: number, s: any) => sum + (s.paid_amount || 0), 0);
   const collectionRate = dueThisMonth > 0 ? (paidThisMonth / dueThisMonth) * 100 : 0;
 
   // Charts
-  const chartDays = 30; 
+  const chartDays = 30;
   const last30Days = [...Array(chartDays)].map((_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - ((chartDays - 1) - i));
@@ -126,7 +132,7 @@ export default async function DashboardPage({
 
   const cashFlowData = last30Days.map(date => {
     const dayTransactions = ledger.filter((t: any) => {
-      const targetDate = t.transaction_date || t.created_at; 
+      const targetDate = t.transaction_date || t.created_at;
       return targetDate && targetDate.startsWith(date);
     });
     return {
@@ -146,7 +152,7 @@ export default async function DashboardPage({
   });
 
   const agingData = [
-    { name: 'Current', value: agingBuckets['current'], color: '#10b981' }, 
+    { name: 'Current', value: agingBuckets['current'], color: '#10b981' },
     { name: '1-30 Days', value: agingBuckets['1-30'], color: '#f59e0b' },
     { name: '31-90 Days', value: agingBuckets['31-90'], color: '#f97316' },
     { name: '90+ Days', value: agingBuckets['90+'], color: '#ef4444' },
@@ -154,41 +160,46 @@ export default async function DashboardPage({
 
   const channels = { Cash: 0, GCash: 0, Debit: 0, Credit: 0 };
   ledger.filter((t: any) => t.category === 'LOAN_REPAYMENT').forEach((t: any) => {
-      const note = (t.notes || '').toLowerCase();
-      if (note.includes('gcash')) channels.GCash += Number(t.amount);
-      else if (note.includes('debit')) channels.Debit += Number(t.amount);
-      else if (note.includes('credit')) channels.Credit += Number(t.amount);
-      else channels.Cash += Number(t.amount);
+    const note = (t.notes || '').toLowerCase();
+    if (note.includes('gcash')) channels.GCash += Number(t.amount);
+    else if (note.includes('debit')) channels.Debit += Number(t.amount);
+    else if (note.includes('credit')) channels.Credit += Number(t.amount);
+    else channels.Cash += Number(t.amount);
   });
 
   const channelData = [
-    { name: 'Cash', value: channels.Cash, color: '#10b981' }, 
-    { name: 'GCash', value: channels.GCash, color: '#007DFE' }, 
-    { name: 'Debit', value: channels.Debit, color: '#F59E0B' }, 
-    { name: 'Credit', value: channels.Credit, color: '#8B5CF6' } 
+    { name: 'Cash', value: channels.Cash, color: '#10b981' },
+    { name: 'GCash', value: channels.GCash, color: '#007DFE' },
+    { name: 'Debit', value: channels.Debit, color: '#F59E0B' },
+    { name: 'Credit', value: channels.Credit, color: '#8B5CF6' }
   ].filter(c => c.value > 0);
 
   return (
-    <div className="w-full pt-16 md:pt-[123px]">
-      <DashboardGrid
-        fundId={fundId}
-        stats={{
-          cashOnHand,
-          totalReceivables,
-          totalEquity,
-          netProfit,
-          activeBorrowers: activeLoans.length,
-          collectibles,
-          collectionRate,
-          parMetric,
-          totalBadDebt
-        }}
-        charts={{
-          cashFlow: cashFlowData,
-          aging: agingData,
-          channels: channelData
-        }}
-      />
+    <div className="w-full min-h-[100dvh] flex flex-col pt-16 md:pt-[123px]">
+      <div className="w-full flex-1 flex flex-col">
+        {/* Adjust translate-y-[-20px] below to move the grid up or down */}
+        <div className="w-full my-auto translate-y-[-40px]">
+          <DashboardGrid
+            fundId={fundId}
+            stats={{
+              cashOnHand,
+              totalReceivables,
+              totalEquity,
+              netProfit,
+              activeBorrowers: activeLoans.length,
+              collectibles,
+              collectionRate,
+              parMetric,
+              totalBadDebt
+            }}
+            charts={{
+              cashFlow: cashFlowData,
+              aging: agingData,
+              channels: channelData
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

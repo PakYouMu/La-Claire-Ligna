@@ -27,12 +27,17 @@ export default async function BorrowersPage({ params }: PageProps) {
   const fund = result.data;
 
   return (
-  <div className="w-full pt-16 md:pt-[123px]">
-    <BorrowersBentoWrapper>
-       {/* You don't need the h1 here anymore if it's inside the card header, 
-           or you can keep it outside if you prefer the title above the bento box */}
-       <BorrowerList fundId={fund.id} /> 
-    </BorrowersBentoWrapper>
-  </div>
-);
+    <div className="w-full min-h-[100dvh] flex flex-col pt-16 md:pt-[123px]">
+      <div className="w-full flex-1 flex flex-col">
+        {/* Adjust translate-y-[-20px] below to move the grid up or down */}
+        <div className="w-full my-auto translate-y-[-40px]">
+          <BorrowersBentoWrapper>
+            {/* You don't need the h1 here anymore if it's inside the card header, 
+                 or you can keep it outside if you prefer the title above the bento box */}
+            <BorrowerList fundId={fund.id} />
+          </BorrowersBentoWrapper>
+        </div>
+      </div>
+    </div>
+  );
 }

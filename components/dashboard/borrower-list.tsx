@@ -8,48 +8,48 @@ interface BorrowerListProps {
 export async function BorrowerList({ fundId }: BorrowerListProps) {
   const supabase = await createClient();
 
-  // 1. Fetch Borrowers
-  const { data: borrowers } = await supabase
-    .from("borrowers")
-    .select("id, first_name, last_name, signature_url, created_at")
-    .eq("fund_id", fundId);
+  // 1. Fetch borrowers and active loans in parallel for optimal speed
+  const [borrowersRes, activeLoansRes] = await Promise.all([
+    supabase
+      .from("borrowers")
+      .select("id, first_name, last_name, signature_url, created_at")
+      .eq("fund_id", fundId)
+      .is("deleted_at", null),
+    supabase
+      .from("view_loan_summary")
+      .select("id, borrower_id, status")
+      .eq("fund_id", fundId)
+      .eq("status", "ACTIVE"),
+  ]);
 
-  // 2. Handle Empty State
-  // If null or empty, return empty array immediately so the UI shows "No borrowers"
-  if (!borrowers || borrowers.length === 0) {
+  const borrowers = borrowersRes.data || [];
+  const activeLoans = activeLoansRes.data || [];
+
+  // 2. Handle empty state
+  if (borrowers.length === 0) {
     return <BorrowerDirectoryClient data={[]} />;
   }
-
-  // 3. Fetch ACTIVE Loans for this Fund
-  const { data: activeLoans } = await supabase
-    .from("view_loan_summary")
-    .select("id, borrower_id, status")
-    .eq("fund_id", fundId)
-    .eq("status", "ACTIVE");
 
   const activeLoanMap = new Map(); // Map<BorrowerID, LoanID>
   const activeLoanIds: string[] = [];
 
-  if (activeLoans) {
-    activeLoans.forEach((loan) => {
-      activeLoanMap.set(loan.borrower_id, loan.id);
-      activeLoanIds.push(loan.id);
-    });
-  }
+  activeLoans.forEach((loan) => {
+    activeLoanMap.set(loan.borrower_id, loan.id);
+    activeLoanIds.push(loan.id);
+  });
 
   // 4. Fetch Next Payment Schedule for ACTIVE loans only
   let nextDueDatesMap = new Map(); // Map<LoanID, DateString>
-  
+
   if (activeLoanIds.length > 0) {
     const { data: schedules } = await supabase
       .from("payment_schedule")
       .select("loan_id, due_date")
       .in("loan_id", activeLoanIds)
       .eq("status", "PENDING")
-      .order("due_date", { ascending: true }); 
+      .order("due_date", { ascending: true });
 
     schedules?.forEach((schedule) => {
-      // Only set the first one found (earliest date due to sorting)
       if (!nextDueDatesMap.has(schedule.loan_id)) {
         nextDueDatesMap.set(schedule.loan_id, schedule.due_date);
       }
@@ -60,9 +60,9 @@ export async function BorrowerList({ fundId }: BorrowerListProps) {
   const preparedData = borrowers.map((b) => {
     const activeLoanId = activeLoanMap.get(b.id);
     const hasActiveLoan = !!activeLoanId;
-    
-    const nextDueDate = hasActiveLoan 
-      ? nextDueDatesMap.get(activeLoanId) || null 
+
+    const nextDueDate = hasActiveLoan
+      ? nextDueDatesMap.get(activeLoanId) || null
       : null;
 
     return {

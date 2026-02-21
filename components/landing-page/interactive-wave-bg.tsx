@@ -168,13 +168,17 @@ export default function HelixCanvas({
   mouseDamping = 0.1,
   mixBlendMode,
   opacity = 1,
-  darkMode = true 
+  darkMode = true
 }: HelixCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef<Vector2>(new Vector2(0, 0));
   const targetMouseRef = useRef<Vector2>(new Vector2(0, 0));
   const isHoveringRef = useRef<number>(0);
-  
+
+  // Cache color conversions in refs to avoid per-frame allocations
+  const heroColorVec = useRef<Vector3>(colorToVec3(heroColor));
+  const bgColorVec = useRef<Vector3>(colorToVec3(backgroundColor));
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -182,20 +186,20 @@ export default function HelixCanvas({
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
     camera.position.z = 1;
 
-    const renderer = new WebGLRenderer({ 
+    const renderer = new WebGLRenderer({
       antialias: false, // Disable antialiasing for better performance
       alpha: true,
       powerPreference: 'high-performance' // Prefer performance over quality
     });
-    
+
     // Detect device capabilities
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isLowEnd = isMobile || navigator.hardwareConcurrency <= 4;
-    
+
     // Adaptive pixel ratio based on device
     const dpr = isLowEnd ? 1 : Math.min(window.devicePixelRatio, 1.5);
     renderer.setPixelRatio(dpr);
-    
+
     const el = containerRef.current;
     renderer.setSize(el.clientWidth, el.clientHeight);
     el.appendChild(renderer.domElement);
@@ -208,8 +212,8 @@ export default function HelixCanvas({
       iResolution: { value: new Vector3(el.clientWidth * dpr, el.clientHeight * dpr, 1) },
       uMouse: { value: new Vector2(0, 0) },
       uHover: { value: 0 },
-      uColorHero: { value: colorToVec3(heroColor) },
-      uColorBg: { value: colorToVec3(backgroundColor) },
+      uColorHero: { value: heroColorVec.current },
+      uColorBg: { value: bgColorVec.current },
       uQuality: { value: quality }
     };
 
@@ -243,13 +247,13 @@ export default function HelixCanvas({
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       const resX = uniforms.iResolution.value.x;
       const resY = uniforms.iResolution.value.y;
-      
+
       const nx = (2.0 * x * dpr - resX) / resY;
       const ny = -((2.0 * y * dpr - resY) / resY);
-      
+
       targetMouseRef.current.set(nx, ny);
       isHoveringRef.current = 1;
     };
@@ -265,13 +269,13 @@ export default function HelixCanvas({
         const rect = el.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
-        
+
         const resX = uniforms.iResolution.value.x;
         const resY = uniforms.iResolution.value.y;
-        
+
         const nx = (2.0 * x * dpr - resX) / resY;
         const ny = -((2.0 * y * dpr - resY) / resY);
-        
+
         targetMouseRef.current.set(nx, ny);
         isHoveringRef.current = 1;
       }
@@ -284,13 +288,13 @@ export default function HelixCanvas({
         const rect = el.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
-        
+
         const resX = uniforms.iResolution.value.x;
         const resY = uniforms.iResolution.value.y;
-        
+
         const nx = (2.0 * x * dpr - resX) / resY;
         const ny = -((2.0 * y * dpr - resY) / resY);
-        
+
         targetMouseRef.current.set(nx, ny);
         isHoveringRef.current = 1;
       }
@@ -311,32 +315,24 @@ export default function HelixCanvas({
     let lastFrameTime = 0;
     const targetFPS = isLowEnd ? 30 : 60; // 30fps on mobile, 60fps on desktop
     const frameInterval = 1000 / targetFPS;
-    
+
     const animate = (currentTime: number) => {
       const deltaTime = currentTime - lastFrameTime;
-      
+
       // Skip frame if not enough time has passed
       if (deltaTime < frameInterval) {
         raf = requestAnimationFrame(animate);
         return;
       }
-      
+
       lastFrameTime = currentTime - (deltaTime % frameInterval);
-      
+
       uniforms.iTime.value = clock.getElapsedTime() * speed;
       mouseRef.current.lerp(targetMouseRef.current, mouseDamping);
       uniforms.uMouse.value.copy(mouseRef.current);
       uniforms.uHover.value += (isHoveringRef.current - uniforms.uHover.value) * mouseDamping;
-      
-      // Only update colors if they've changed (avoid unnecessary CPU work)
-      const newHeroColor = colorToVec3(heroColor);
-      const newBgColor = colorToVec3(backgroundColor);
-      if (!uniforms.uColorHero.value.equals(newHeroColor)) {
-        uniforms.uColorHero.value.copy(newHeroColor);
-      }
-      if (!uniforms.uColorBg.value.equals(newBgColor)) {
-        uniforms.uColorBg.value.copy(newBgColor);
-      }
+
+      // Colors are updated via useEffect, no per-frame work needed
 
       renderer.render(scene, camera);
       raf = requestAnimationFrame(animate);
@@ -352,19 +348,19 @@ export default function HelixCanvas({
       el.removeEventListener('touchmove', handleTouchMove);
       el.removeEventListener('touchend', handleTouchEnd);
       el.removeEventListener('touchcancel', handleTouchEnd);
-      
+
       geometry.dispose();
       material.dispose();
       renderer.dispose();
-      
+
       if (renderer.domElement.parentElement) {
         renderer.domElement.parentElement.removeChild(renderer.domElement);
       }
     };
-  }, [heroColor, backgroundColor, speed, mouseDamping, darkMode]); 
+  }, [heroColor, backgroundColor, speed, mouseDamping, darkMode]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       style={{
         width: '100%',

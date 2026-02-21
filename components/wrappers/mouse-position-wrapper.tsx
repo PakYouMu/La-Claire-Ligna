@@ -1,27 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { MousePositionContext } from '../context/mouse-position-context';
 
 export default function MousePositionProvider({ children }: { children: React.ReactNode }) {
-  const [mousePosition, setMousePosition] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
+  const positionRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+  const listenersRef = useRef<Set<() => void>>(new Set());
+
+  const subscribe = useCallback((listener: () => void) => {
+    listenersRef.current.add(listener);
+    return () => { listenersRef.current.delete(listener); };
+  }, []);
+
+  const getSnapshot = useCallback(() => positionRef.current, []);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({ x: event.clientX, y: event.clientY });
+      // Mutate the existing object instead of creating a new one
+      positionRef.current = { x: event.clientX, y: event.clientY };
+      // Notify subscribers (the 3D wave component)
+      listenersRef.current.forEach(listener => listener());
     };
 
-    // Add listener to the whole window
     window.addEventListener('mousemove', handleMouseMove);
-
-    // Cleanup function to remove the listener when the component unmounts
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
+    return () => { window.removeEventListener('mousemove', handleMouseMove); };
   }, []);
 
   return (
-    <MousePositionContext.Provider value={mousePosition}>
+    <MousePositionContext.Provider value={{ subscribe, getSnapshot }}>
       {children}
     </MousePositionContext.Provider>
   );
