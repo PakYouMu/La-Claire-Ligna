@@ -16,32 +16,35 @@ export function ThemeBasedSignUpForms() {
 
   return (
     <>
-      {/* Left side (clipped to left 38%) */}
-      <div 
-        className="absolute inset-0 flex items-center justify-center md:justify-start px-6 md:px-0 md:pl-[8%] z-10 pointer-events-none"
-        style={{
-          clipPath: 'polygon(0 0, 38% 0, 38% 100%, 0 100%)',
-        }}
+      <style>{`
+        .auth-clip-1 { clip-path: polygon(0 0, 100% 0, 100% 80%, 0 80%); }
+        .auth-clip-2 { clip-path: polygon(0 80%, 100% 80%, 100% 100%, 0 100%); }
+        @media (min-width: 768px) {
+          .auth-clip-1 { clip-path: polygon(0 0, 55% 0, 55% 100%, 0 100%); }
+          .auth-clip-2 { clip-path: polygon(55% 0, 100% 0, 100% 100%, 55% 100%); }
+        }
+      `}</style>
+
+      {/* Primary side (Left on desktop, Top on mobile) */}
+      <div
+        className="auth-clip-1 absolute inset-0 flex items-center justify-center md:justify-start px-6 md:px-0 md:pl-[8%] z-10 pointer-events-none"
       >
         <div className="w-full max-w-sm pointer-events-auto">
-          <SignUpForm 
-            className="bg-transparent border-none shadow-none" 
-            textColor={isDark ? "black" : "white"} 
+          <SignUpForm
+            className="bg-transparent border-none shadow-none"
+            textColor={isDark ? "black" : "white"}
           />
         </div>
       </div>
 
-      {/* Right side (clipped to right 62%) */}
-      <div 
-        className="absolute inset-0 flex items-center justify-center md:justify-start px-6 md:px-0 md:pl-[8%] z-10 pointer-events-none"
-        style={{
-          clipPath: 'polygon(38% 0, 100% 0, 100% 100%, 38% 100%)',
-        }}
+      {/* Secondary side (Right on desktop, Bottom on mobile) */}
+      <div
+        className="auth-clip-2 absolute inset-0 flex items-center justify-center md:justify-start px-6 md:px-0 md:pl-[8%] z-10 pointer-events-none"
       >
         <div className="w-full max-w-sm pointer-events-auto">
-          <SignUpForm 
-            className="bg-transparent border-none shadow-none" 
-            textColor={isDark ? "white" : "black"} 
+          <SignUpForm
+            className="bg-transparent border-none shadow-none"
+            textColor={isDark ? "white" : "black"}
           />
         </div>
       </div>

@@ -20,8 +20,8 @@ export default function SignUpPage() {
         <div
           className="md:hidden fixed top-0 bottom-0 left-0 w-[100vw] backdrop-invert z-0 pointer-events-none"
           style={{
-            maskImage: 'linear-gradient(180deg, black 0%, black 60%, transparent 95%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(180deg, black 0%, black 60%, transparent 95%, transparent 100%)',
+            maskImage: 'linear-gradient(180deg, black 0%, black 80%, transparent 95%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(180deg, black 0%, black 80%, transparent 95%, transparent 100%)',
             transform: 'translateZ(0)',
             backfaceVisibility: 'hidden'
           }}
